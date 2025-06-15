@@ -35,13 +35,19 @@ export async function POST(request: NextRequest) {
     if (!encryptedFile || !encryptionKey || !iv || !salt || !metadataIv || !originalName) {
       console.log('Missing required fields');
       return NextResponse.json({ success: false, error: 'Missing required encryption data.' }, { status: 400 });
-    }
-
-    const bytes = await encryptedFile.arrayBuffer();
+    }    const bytes = await encryptedFile.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
     // Create uploads directory if it doesn't exist
     const uploadDir = join(process.cwd(), 'uploads');
+    
+    try {
+      await writeFile(join(uploadDir, '.gitkeep'), ''); // Ensure directory exists
+    } catch (err) {
+      // Directory might not exist, create it
+      const { mkdir } = await import('fs/promises');
+      await mkdir(uploadDir, { recursive: true });
+    }
     
     // Create a unique filename to avoid conflicts
     const timestamp = Date.now();

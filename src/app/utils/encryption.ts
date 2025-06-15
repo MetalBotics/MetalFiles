@@ -1,7 +1,20 @@
 // Client-side encryption utilities using Web Crypto API
 
-export class FileEncryption {
+export class FileEncryption {  public static isCryptoAvailable(): boolean {
+    return typeof window !== 'undefined' && 
+           window.crypto && 
+           window.crypto.subtle && 
+           typeof window.crypto.subtle.generateKey === 'function';
+  }
+
+  private static ensureCryptoAvailable(): void {
+    if (!this.isCryptoAvailable()) {
+      throw new Error('Web Crypto API is not available. Please ensure you are running in a secure context (HTTPS) and your browser supports the Web Crypto API.');
+    }
+  }
+
   private static async generateKey(): Promise<CryptoKey> {
+    this.ensureCryptoAvailable();
     return await window.crypto.subtle.generateKey(
       {
         name: 'AES-GCM',
@@ -11,7 +24,9 @@ export class FileEncryption {
       ['encrypt', 'decrypt']
     );
   }
+
   private static async deriveKeyFromPassword(password: string, salt: Uint8Array): Promise<CryptoKey> {
+    this.ensureCryptoAvailable();
     const encoder = new TextEncoder();
     const keyMaterial = await window.crypto.subtle.importKey(
       'raw',
@@ -34,7 +49,6 @@ export class FileEncryption {
       ['encrypt', 'decrypt']
     );
   }
-
   public static async encryptFile(file: File): Promise<{
     encryptedData: ArrayBuffer;
     key: string;
@@ -42,6 +56,8 @@ export class FileEncryption {
     salt: Uint8Array;
   }> {
     try {
+      this.ensureCryptoAvailable();
+      
       // Generate a random password for this file
       const password = Array.from(window.crypto.getRandomValues(new Uint8Array(32)))
         .map(b => b.toString(16).padStart(2, '0'))
@@ -76,7 +92,6 @@ export class FileEncryption {
       throw new Error('Failed to encrypt file');
     }
   }
-
   public static async decryptFile(
     encryptedData: ArrayBuffer,
     password: string,
@@ -84,6 +99,8 @@ export class FileEncryption {
     salt: Uint8Array
   ): Promise<ArrayBuffer> {
     try {
+      this.ensureCryptoAvailable();
+      
       // Derive key from password
       const cryptoKey = await this.deriveKeyFromPassword(password, salt);      // Decrypt the data
       const decryptedData = await window.crypto.subtle.decrypt(

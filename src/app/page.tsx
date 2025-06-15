@@ -104,10 +104,22 @@ export default function Home() {
   const [linkValidationStatus, setLinkValidationStatus] = useState<{
     [key: string]: "valid" | "invalid" | "checking";
   }>({});
+  const [cryptoError, setCryptoError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsMounted(true);
+
+    // Check crypto availability on mount
+    if (!FileEncryption.isCryptoAvailable()) {
+      console.warn('Web Crypto API not available. Upload functionality will be limited.');
+      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && process.env.NODE_ENV === 'production') {
+        setCryptoError('Secure file transfer requires HTTPS. Please access this site over HTTPS for full functionality.');
+      } else if (window.location.protocol !== 'https:') {
+        console.warn('Running in HTTP mode. For full security, use HTTPS in production.');
+        setCryptoError('Development mode: Running over HTTP. Web Crypto API may not be available. For production, use HTTPS.');
+      }
+    }
 
     const handleScroll = () => {
       setScrollY(window.scrollY);
@@ -327,6 +339,15 @@ export default function Home() {
   const uploadFiles = async () => {
     if (selectedFiles.length === 0) return;
 
+    // Ensure we're running in a browser environment with crypto support
+    if (!FileEncryption.isCryptoAvailable()) {
+      const errorMsg = 'Upload requires Web Crypto API support. Please ensure you are running in a secure context (HTTPS) and your browser supports the Web Crypto API.';
+      console.error(errorMsg);
+      setCryptoError(errorMsg);
+      return;
+    }
+
+    setCryptoError(null);
     setIsUploading(true);
 
     // Initialize upload status for all files
@@ -860,6 +881,47 @@ export default function Home() {
             </p>
           </div>
 
+          {/* Crypto Error Notice */}
+          {cryptoError && (
+            <div className="max-w-4xl mx-auto mb-6">
+              <div className="bg-red-900/20 border border-red-600/30 rounded-lg p-4 flex items-center gap-3">
+                <svg
+                  className="w-5 h-5 text-red-500 flex-shrink-0"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <div
+                  className="text-red-200 text-sm"
+                  style={{ fontFamily: "Roboto, sans-serif" }}
+                >
+                  <strong>Crypto Error:</strong> {cryptoError}
+                </div>
+                <button
+                  onClick={() => setCryptoError(null)}
+                  className="ml-auto text-red-400 hover:text-red-300 transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* File Restore Notice */}
           {showFileRestoreNotice && (
             <div className="max-w-4xl mx-auto mb-6">
@@ -1178,9 +1240,9 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={uploadFiles}
-                    disabled={isUploading || selectedFiles.length === 0}
+                    disabled={isUploading || selectedFiles.length === 0 || !FileEncryption.isCryptoAvailable()}
                     className={`flex-1 ${
-                      isUploading
+                      isUploading || !FileEncryption.isCryptoAvailable()
                         ? "bg-gray-600 cursor-not-allowed"
                         : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                     } text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl`}
