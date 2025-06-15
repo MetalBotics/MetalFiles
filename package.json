@@ -8,7 +8,7 @@
     "clean": "rimraf .next",
     "prebuild": "npm run clean",
     "build": "next build",
-    "start": "next start --experimental-https",
+    "start": "next start",
     "start-http": "next start",
     "lint": "next lint"
   },
