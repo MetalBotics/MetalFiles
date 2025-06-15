@@ -10,7 +10,7 @@ export const maxDuration = 900; // 15 minutes for very large downloads (up to 10
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const { token } = await params;
