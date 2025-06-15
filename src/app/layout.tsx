@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Roboto, Orbitron, IBM_Plex_Mono, Montserrat } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Roboto,
+  Orbitron,
+  IBM_Plex_Mono,
+  Montserrat,
+} from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,12 +24,14 @@ const roboto = Roboto({
   subsets: ["latin"],
   weight: ["100", "300", "400", "500", "700", "900"],
   style: ["normal", "italic"],
+  display: "swap",
 });
 
 const orbitron = Orbitron({
   variable: "--font-orbitron",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
+  display: "swap",
 });
 
 const ibmPlexMono = IBM_Plex_Mono({
@@ -40,8 +49,8 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "MBFT - File Transfer",
-  description: "Modern file transfer solution",
+  title: "MetalFiles",
+  description: "MetalBotics - Modern file transfer solution",
 };
 
 export default function RootLayout({
@@ -50,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={orbitron.variable}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} ${orbitron.variable} ${ibmPlexMono.variable} ${montserrat.variable} antialiased bg-black text-white min-h-screen`}
       >

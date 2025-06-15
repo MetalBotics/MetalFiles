@@ -5,6 +5,23 @@ import Navbar from "./components/Navbar";
 import { useState, useRef, useEffect, useReducer } from "react";
 import Footer from "./components/Footer";
 import { FileEncryption } from "./utils/encryption";
+import NoSSR from "./components/NoSSR";
+
+// Suppress hydration warnings in development
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (
+      typeof args[0] === "string" &&
+      (args[0].includes("Hydration failed") ||
+        args[0].includes("hydrated but some attributes") ||
+        args[0].includes("data-cnp-create-listener"))
+    ) {
+      return;
+    }
+    originalError(...args);
+  };
+}
 
 type DownloadUrl = {
   id: string;
@@ -68,6 +85,7 @@ export default function Home() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{
     [key: string]: number;
@@ -89,6 +107,8 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    setIsMounted(true);
+
     const handleScroll = () => {
       setScrollY(window.scrollY);
     };
@@ -794,7 +814,9 @@ export default function Home() {
         <div
           className="absolute inset-0 opacity-20"
           style={{
-            transform: `translateY(${scrollY * 0.5}px)`,
+            transform: isMounted
+              ? `translateY(${scrollY * 0.5}px)`
+              : "translateY(0px)",
           }}
         >
           <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
@@ -806,7 +828,9 @@ export default function Home() {
         <div
           className="absolute inset-0 opacity-5"
           style={{
-            transform: `translateY(${scrollY * 0.3}px)`,
+            transform: isMounted
+              ? `translateY(${scrollY * 0.3}px)`
+              : "translateY(0px)",
             backgroundImage: `
               linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
               linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
@@ -821,7 +845,9 @@ export default function Home() {
             className="text-center mb-16"
             style={{
               fontFamily: "Roboto, sans-serif",
-              transform: `translateY(${scrollY * 0.1}px)`,
+              transform: isMounted
+                ? `translateY(${scrollY * 0.1}px)`
+                : "translateY(0px)",
             }}
           >
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
@@ -881,7 +907,9 @@ export default function Home() {
           <div
             className="max-w-4xl mx-auto mb-20"
             style={{
-              transform: `translateY(${scrollY * 0.05}px)`,
+              transform: isMounted
+                ? `translateY(${scrollY * 0.05}px)`
+                : "translateY(0px)",
               position: "relative",
               zIndex: 20,
             }}
@@ -932,15 +960,17 @@ export default function Home() {
                   encryption
                 </p>
 
-                <input
-                  ref={fileInputRef}
-                  id="file-upload"
-                  name="file-upload"
-                  type="file"
-                  className="sr-only"
-                  multiple
-                  onChange={handleInputChange}
-                />
+                <NoSSR fallback={<div className="sr-only"></div>}>
+                  <input
+                    ref={fileInputRef}
+                    id="file-upload"
+                    name="file-upload"
+                    type="file"
+                    className="sr-only"
+                    multiple
+                    onChange={handleInputChange}
+                  />
+                </NoSSR>
 
                 <button
                   type="button"
@@ -973,7 +1003,9 @@ export default function Home() {
               className="max-w-4xl mx-auto mt-8 mb-12"
               style={{
                 fontFamily: "Roboto, sans-serif",
-                transform: `translateY(${scrollY * 0.03}px)`,
+                transform: isMounted
+                  ? `translateY(${scrollY * 0.03}px)`
+                  : "translateY(0px)",
                 position: "relative",
                 zIndex: 15,
               }}
@@ -1225,7 +1257,9 @@ export default function Home() {
             <div
               className="max-w-4xl mx-auto mb-16 px-6 mt-8"
               style={{
-                transform: `translateY(${scrollY * 0.02}px)`,
+                transform: isMounted
+                  ? `translateY(${scrollY * 0.02}px)`
+                  : "translateY(0px)",
                 position: "relative",
                 zIndex: 10,
               }}
@@ -1485,19 +1519,25 @@ export default function Home() {
             className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8"
             style={{
               fontFamily: "Roboto, sans-serif",
-              transform: `translateY(${scrollY * 0.02}px)`,
+              transform: isMounted
+                ? `translateY(${scrollY * 0.02}px)`
+                : "translateY(0px)",
             }}
           >
             <div
               className="text-center p-6 bg-gray-900/30 backdrop-blur-sm rounded-xl border border-gray-700/30"
               style={{
-                transform: `translateY(${scrollY * 0.01}px)`,
+                transform: isMounted
+                  ? `translateY(${scrollY * 0.01}px)`
+                  : "translateY(0px)",
               }}
             >
               <div
                 className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-4"
                 style={{
-                  transform: `translateY(${Math.sin(scrollY * 0.005) * 5}px)`,
+                  transform: isMounted
+                    ? `translateY(${Math.sin(scrollY * 0.005) * 5}px)`
+                    : "translateY(0px)",
                 }}
               >
                 <svg
@@ -1526,13 +1566,17 @@ export default function Home() {
             <div
               className="text-center p-6 bg-gray-900/30 backdrop-blur-sm rounded-xl border border-gray-700/30"
               style={{
-                transform: `translateY(${scrollY * 0.015}px)`,
+                transform: isMounted
+                  ? `translateY(${scrollY * 0.015}px)`
+                  : "translateY(0px)",
               }}
             >
               <div
                 className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-4"
                 style={{
-                  transform: `translateY(${Math.sin(scrollY * 0.007) * 5}px)`,
+                  transform: isMounted
+                    ? `translateY(${Math.sin(scrollY * 0.007) * 5}px)`
+                    : "translateY(0px)",
                 }}
               >
                 <svg
@@ -1561,13 +1605,17 @@ export default function Home() {
             <div
               className="text-center p-6 bg-gray-900/30 backdrop-blur-sm rounded-xl border border-gray-700/30"
               style={{
-                transform: `translateY(${scrollY * 0.008}px)`,
+                transform: isMounted
+                  ? `translateY(${scrollY * 0.008}px)`
+                  : "translateY(0px)",
               }}
             >
               <div
                 className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-4"
                 style={{
-                  transform: `translateY(${Math.sin(scrollY * 0.009) * 5}px)`,
+                  transform: isMounted
+                    ? `translateY(${Math.sin(scrollY * 0.009) * 5}px)`
+                    : "translateY(0px)",
                 }}
               >
                 <svg
