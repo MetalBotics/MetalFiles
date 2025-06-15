@@ -32,10 +32,16 @@ export async function GET(request: NextRequest) {
         expiredFiles++;
       } else {
         validFiles++;        // Add to valid tokens for download URLs
+        // Generate absolute URL using request headers (same logic as upload API)
+        const forwardedProto = request.headers.get('x-forwarded-proto');
+        const protocol = forwardedProto || (request.nextUrl.protocol.replace(':', ''));
+        const host = request.headers.get('host') || request.nextUrl.host;
+        const downloadUrl = `${protocol}://${host}/download/${token}`;
+        
         validTokens.push({
           id: token, // Use token directly as ID for consistency
           fileName: data.originalName,
-          downloadUrl: `/download/${token}`,
+          downloadUrl: downloadUrl,
           expiresAt: new Date(data.expiresAt).toISOString(),
           token: token
         });

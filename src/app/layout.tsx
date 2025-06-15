@@ -51,6 +51,12 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "MetalFiles",
   description: "MetalBotics - Modern file transfer solution",
+  other: {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+  },
 };
 
 export default function RootLayout({

@@ -10,6 +10,20 @@ export const maxDuration = 900; // 15 minutes for very large uploads (up to 10GB
 
 export async function POST(request: NextRequest) {
   try {
+    // Force HTTPS in production
+    if (process.env.NODE_ENV === 'production') {
+      const isHTTPS = request.headers.get('x-forwarded-proto') === 'https' || 
+                     request.nextUrl.protocol === 'https:' ||
+                     request.headers.get('x-forwarded-ssl') === 'on';
+      
+      if (!isHTTPS) {
+        return NextResponse.json(
+          { error: 'HTTPS required for secure file upload' }, 
+          { status: 400 }
+        );
+      }
+    }
+
     const data = await request.formData();
     
     console.log('Received FormData keys:', Array.from(data.keys()));
@@ -73,11 +87,18 @@ export async function POST(request: NextRequest) {
     });
     console.log('Token stored:', downloadToken);
     console.log('Token data:', { filename, originalName, size: originalSize, expiresAt });
-    console.log('Total tokens in storage:', await downloadTokens.size());
+    console.log('Total tokens in storage:', await downloadTokens.size());    // Generate download URL (pointing to the download page, not API)
+    // Ensure we use the correct protocol and host from the request
+    const forwardedProto = request.headers.get('x-forwarded-proto');
+    const protocol = forwardedProto || (request.nextUrl.protocol.replace(':', ''));
+    const host = request.headers.get('host') || request.nextUrl.host;
+    const downloadUrl = `${protocol}://${host}/download/${downloadToken}`;
     
-    // Generate download URL (pointing to the download page, not API)
-    const downloadUrl = `${request.nextUrl.origin}/download/${downloadToken}`;
-      console.log(`Encrypted file uploaded: ${filename}, Original: ${originalName}, Size: ${originalSize} bytes, Download token: ${downloadToken}`);
+    console.log(`Generated download URL: ${downloadUrl}`);
+    console.log(`Request origin: ${request.nextUrl.origin}`);
+    console.log(`X-Forwarded-Proto: ${forwardedProto}`);
+    console.log(`Host header: ${request.headers.get('host')}`);
+    console.log(`Encrypted file uploaded: ${filename}, Original: ${originalName}, Size: ${originalSize} bytes, Download token: ${downloadToken}`);
 
     // Trigger cleanup of expired files in the background
     cleanupExpiredTokens().catch(err => 

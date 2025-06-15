@@ -110,14 +110,35 @@ export default function Home() {
   useEffect(() => {
     setIsMounted(true);
 
+    // Force HTTPS in production
+    if (
+      process.env.NODE_ENV === "production" &&
+      window.location.protocol !== "https:"
+    ) {
+      window.location.replace(window.location.href.replace("http:", "https:"));
+      return;
+    }
+
     // Check crypto availability on mount
     if (!FileEncryption.isCryptoAvailable()) {
-      console.warn('Web Crypto API not available. Upload functionality will be limited.');
-      if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && process.env.NODE_ENV === 'production') {
-        setCryptoError('Secure file transfer requires HTTPS. Please access this site over HTTPS for full functionality.');
-      } else if (window.location.protocol !== 'https:') {
-        console.warn('Running in HTTP mode. For full security, use HTTPS in production.');
-        setCryptoError('Development mode: Running over HTTP. Web Crypto API may not be available. For production, use HTTPS.');
+      console.warn(
+        "Web Crypto API not available. Upload functionality will be limited."
+      );
+      if (
+        window.location.protocol !== "https:" &&
+        window.location.hostname !== "localhost" &&
+        process.env.NODE_ENV === "production"
+      ) {
+        setCryptoError(
+          "Secure file transfer requires HTTPS. Please access this site over HTTPS for full functionality."
+        );
+      } else if (window.location.protocol !== "https:") {
+        console.warn(
+          "Running in HTTP mode. For full security, use HTTPS in production."
+        );
+        setCryptoError(
+          "Development mode: Running over HTTP. Web Crypto API may not be available. For production, use HTTPS."
+        );
       }
     }
 
@@ -341,7 +362,8 @@ export default function Home() {
 
     // Ensure we're running in a browser environment with crypto support
     if (!FileEncryption.isCryptoAvailable()) {
-      const errorMsg = 'Upload requires Web Crypto API support. Please ensure you are running in a secure context (HTTPS) and your browser supports the Web Crypto API.';
+      const errorMsg =
+        "Upload requires Web Crypto API support. Please ensure you are running in a secure context (HTTPS) and your browser supports the Web Crypto API.";
       console.error(errorMsg);
       setCryptoError(errorMsg);
       return;
@@ -1240,7 +1262,11 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={uploadFiles}
-                    disabled={isUploading || selectedFiles.length === 0 || !FileEncryption.isCryptoAvailable()}
+                    disabled={
+                      isUploading ||
+                      selectedFiles.length === 0 ||
+                      !FileEncryption.isCryptoAvailable()
+                    }
                     className={`flex-1 ${
                       isUploading || !FileEncryption.isCryptoAvailable()
                         ? "bg-gray-600 cursor-not-allowed"
