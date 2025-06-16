@@ -9,16 +9,35 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <div className="flex items-center">
-            <Link href="/" className="group cursor-pointer flex items-center gap-4">
-              <Image
-                src="/favicon.ico"
-                alt="MetalFiles Icon"
-                width={40}
-                height={40}
-                className="group-hover:scale-110 transition-transform duration-300"
-                priority
-                unoptimized
-              />
+            {" "}
+            <Link
+              href="/"
+              className="group cursor-pointer flex items-center gap-4"
+            >
+              <div className="w-10 h-10 flex items-center justify-center favicon-container">
+                <Image
+                  src="/favicon.ico"
+                  alt="MetalFiles Icon"
+                  width={40}
+                  height={40}
+                  className="group-hover:scale-110 transition-transform duration-300"
+                  priority
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    display: "block",
+                    opacity: 1,
+                    visibility: "visible",
+                  }}
+                  onError={(e) => {
+                    // Fallback to regular img if Next.js Image fails
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== "/favicon.ico") {
+                      target.src = "/favicon.ico";
+                    }
+                  }}
+                />
+              </div>
               <h1 className="text-3xl font-bold text-white group-hover:text-blue-400 transition-colors duration-300 select-none logo-text">
                 MetalFiles
               </h1>

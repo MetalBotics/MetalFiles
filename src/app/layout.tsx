@@ -69,7 +69,11 @@ export default function RootLayout({
     <html lang="en" className={orbitron.variable}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} ${orbitron.variable} ${ibmPlexMono.variable} ${montserrat.variable} antialiased bg-black text-white min-h-screen`}

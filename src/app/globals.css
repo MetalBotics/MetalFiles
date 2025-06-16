@@ -21,11 +21,24 @@ body {
   visibility: visible !important;
 }
 
-/* Prevent icon flashing */
+/* Prevent icon flashing - force visibility */
 img[src="/favicon.ico"] {
+  width: 40px !important;
+  height: 40px !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+/* Ensure favicon container is stable */
+.favicon-container {
   width: 40px;
   height: 40px;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Ensure Orbitron font loads immediately */
