@@ -4,6 +4,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import crypto from 'crypto';
 import { downloadTokens } from '../../tokenStorage';
+import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
 
 // Server-side decryption function using Node.js crypto
 async function decryptFile(
@@ -85,6 +86,29 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
+      // Check rate limit first
+    const rateLimit = checkRateLimit(apiRateLimiter, request);
+    
+    if (!rateLimit.allowed) {
+      console.log(`Download rate limit exceeded for IP: ${rateLimit.ip}`);
+      const retryAfter = rateLimit.retryAfter || 60;
+      return NextResponse.json(
+        { 
+          error: 'Rate limit exceeded. Too many download attempts.',
+          retryAfter: retryAfter
+        }, 
+        { 
+          status: 429,          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(rateLimit.resetTime || Date.now() + 60000).toISOString()
+          }
+        }
+      );
+    }
+
+    console.log(`Download request from IP: ${rateLimit.ip}, remaining: ${rateLimit.remaining}`);
     
     // Check if token exists and is valid
     const tokenData = await downloadTokens.get(token);
@@ -142,8 +166,7 @@ export async function GET(
       // Get file extension for MIME type
       const fileExtension = tokenData.originalName.split('.').pop()?.toLowerCase();
       const mimeType = getMimeType(fileExtension);
-      
-      // Return the decrypted file with correct headers
+        // Return the decrypted file with correct headers
       return new NextResponse(new Uint8Array(decryptedBuffer), {
         status: 200,
         headers: {
@@ -152,7 +175,10 @@ export async function GET(
           'Content-Length': decryptedBuffer.length.toString(),
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
-          'Expires': '0'
+          'Expires': '0',
+          'X-RateLimit-Limit': '5',
+          'X-RateLimit-Remaining': (rateLimit.remaining || 0).toString(),
+          'X-RateLimit-Reset': new Date(rateLimit.resetTime || Date.now() + 60000).toISOString()
         }
       });
       

@@ -3,12 +3,34 @@ import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { downloadTokens } from '../../tokenStorage';
+import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    // Check rate limit first
+    const rateLimit = checkRateLimit(apiRateLimiter, request);
+    
+    if (!rateLimit.allowed) {
+      const retryAfter = rateLimit.retryAfter || 60;
+      return NextResponse.json(
+        { 
+          error: 'Rate limit exceeded.',
+          retryAfter: retryAfter
+        }, 
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': '0'
+          }
+        }
+      );
+    }
+
     const { token } = await params;
     
     // Check if token exists
@@ -42,10 +64,15 @@ export async function DELETE(
     // Remove token from storage
     await downloadTokens.delete(token);
     console.log(`Token removed by user: ${token}`);
-    
-    return NextResponse.json({
+      return NextResponse.json({
       success: true,
       message: 'File and token deleted successfully'
+    }, {
+      headers: {
+        'X-RateLimit-Limit': '5',
+        'X-RateLimit-Remaining': (rateLimit.remaining || 0).toString(),
+        'X-RateLimit-Reset': new Date(rateLimit.resetTime || Date.now() + 60000).toISOString()
+      }
     });
 
   } catch (error) {

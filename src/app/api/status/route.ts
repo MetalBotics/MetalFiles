@@ -1,8 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { downloadTokens } from '../tokenStorage';
+import { apiRateLimiter, checkRateLimit } from '../rateLimiter';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check rate limit first
+    const rateLimit = checkRateLimit(apiRateLimiter, request);
+    
+    if (!rateLimit.allowed) {
+      const retryAfter = rateLimit.retryAfter || 60;
+      return NextResponse.json(
+        { 
+          error: 'Rate limit exceeded.',
+          retryAfter: retryAfter
+        }, 
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': '0'
+          }
+        }
+      );
+    }
+
     const now = Date.now();
     let totalFiles = 0;
     let expiredFiles = 0;
@@ -67,6 +89,12 @@ export async function GET(request: NextRequest) {
       },
       files: files.sort((a, b) => a.expiresAt.localeCompare(b.expiresAt)),
       validTokens: validTokens.sort((a, b) => a.expiresAt.localeCompare(b.expiresAt))
+    }, {
+      headers: {
+        'X-RateLimit-Limit': '5',
+        'X-RateLimit-Remaining': (rateLimit.remaining || 0).toString(),
+        'X-RateLimit-Reset': new Date(rateLimit.resetTime || Date.now() + 60000).toISOString()
+      }
     });
   } catch (error) {
     console.error('Error getting file status:', error);

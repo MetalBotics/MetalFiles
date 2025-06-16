@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { downloadTokens } from '../../tokenStorage';
+import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +8,26 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
+      // Check rate limit (shared API rate limiter)
+    const rateLimit = checkRateLimit(apiRateLimiter, request);
+    
+    if (!rateLimit.allowed) {
+      const retryAfter = rateLimit.retryAfter || 60;
+      return NextResponse.json(
+        { 
+          error: 'Rate limit exceeded.',
+          retryAfter: retryAfter
+        }, 
+        { 
+          status: 429,          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': '0'
+          }
+        }
+      );
+    }
+    
     console.log('File-info API called with token:', token);
     
     // Check if token exists and is valid
@@ -31,13 +52,18 @@ export async function GET(
         { status: 410 }
       );
     }
-    
-    // Return file information
+      // Return file information
     return NextResponse.json({
       originalName: tokenData.originalName,
       size: tokenData.size,
       expiresAt: new Date(tokenData.expiresAt).toISOString(),
       isValid: true
+    }, {
+      headers: {
+        'X-RateLimit-Limit': '5',
+        'X-RateLimit-Remaining': rateLimit.remaining?.toString() || '0',
+        'X-RateLimit-Reset': new Date(rateLimit.resetTime || Date.now() + 60000).toISOString()
+      }
     });
 
   } catch (error) {

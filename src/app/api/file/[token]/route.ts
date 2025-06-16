@@ -3,6 +3,7 @@ import { createReadStream, existsSync, statSync } from 'fs';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { downloadTokens } from '../../tokenStorage';
+import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
 
 // Configure for large file downloads
 export const runtime = 'nodejs';
@@ -13,6 +14,27 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    // Check rate limit first
+    const rateLimit = checkRateLimit(apiRateLimiter, request);
+    
+    if (!rateLimit.allowed) {
+      const retryAfter = rateLimit.retryAfter || 60;
+      return NextResponse.json(
+        { 
+          error: 'Rate limit exceeded.',
+          retryAfter: retryAfter
+        }, 
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': '0'
+          }
+        }
+      );
+    }
+
     const { token } = await params;
     
     // Check if token exists and is valid
@@ -58,8 +80,7 @@ export async function GET(
       
       // Read the encrypted file
       const encryptedFileBuffer = await readFile(filePath);
-      
-      // Return encrypted file as binary data with metadata in headers
+        // Return encrypted file as binary data with metadata in headers
       const response = new NextResponse(new Uint8Array(encryptedFileBuffer), {
         status: 200,
         headers: {
@@ -72,7 +93,10 @@ export async function GET(
           'X-Original-Size': tokenData.size.toString(),
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
-          'Expires': '0'
+          'Expires': '0',
+          'X-RateLimit-Limit': '5',
+          'X-RateLimit-Remaining': (rateLimit.remaining || 0).toString(),
+          'X-RateLimit-Reset': new Date(rateLimit.resetTime || Date.now() + 60000).toISOString()
         }
       });
       

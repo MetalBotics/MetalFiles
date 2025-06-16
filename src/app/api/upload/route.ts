@@ -3,13 +3,37 @@ import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import crypto from 'crypto';
 import { downloadTokens, cleanupExpiredTokens } from '../tokenStorage';
+import { apiRateLimiter, checkRateLimit } from '../rateLimiter';
 
 // Configure for large file uploads
 export const runtime = 'nodejs';
 export const maxDuration = 900; // 15 minutes for very large uploads (up to 10GB)
 
 export async function POST(request: NextRequest) {
-  try {
+  try {    // Check rate limit first
+    const rateLimit = checkRateLimit(apiRateLimiter, request);
+      if (!rateLimit.allowed) {
+      console.log(`Rate limit exceeded for IP: ${rateLimit.ip}`);
+      const retryAfter = rateLimit.retryAfter || 60;
+      return NextResponse.json(
+        { 
+          error: 'Rate limit exceeded. Please try again later.',
+          retryAfter: retryAfter
+        }, 
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(rateLimit.resetTime || Date.now() + 60000).toISOString()
+          }
+        }
+      );
+    }
+
+    console.log(`Upload request from IP: ${rateLimit.ip}, remaining: ${rateLimit.remaining}`);
+
     // Force HTTPS in production
     if (process.env.NODE_ENV === 'production') {
       const isHTTPS = request.headers.get('x-forwarded-proto') === 'https' || 
@@ -103,9 +127,7 @@ export async function POST(request: NextRequest) {
     // Trigger cleanup of expired files in the background
     cleanupExpiredTokens().catch(err => 
       console.error('Background cleanup failed:', err)
-    );
-
-    return NextResponse.json({ 
+    );    return NextResponse.json({ 
       success: true, 
       message: 'File uploaded and encrypted successfully',
       filename: filename,
@@ -114,6 +136,12 @@ export async function POST(request: NextRequest) {
       downloadUrl: downloadUrl,
       downloadToken: downloadToken,
       expiresAt: new Date(expiresAt).toISOString()
+    }, {
+      headers: {
+        'X-RateLimit-Limit': '5',
+        'X-RateLimit-Remaining': (rateLimit.remaining || 0).toString(),
+        'X-RateLimit-Reset': new Date(rateLimit.resetTime || Date.now() + 60000).toISOString()
+      }
     });
 
   } catch (error) {
