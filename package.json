@@ -10,7 +10,14 @@
     "build": "next build",
     "start": "next start",
     "start-http": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop filetransfer",
+    "pm2:restart": "pm2 restart filetransfer",
+    "pm2:delete": "pm2 delete filetransfer",
+    "pm2:logs": "pm2 logs filetransfer",
+    "pm2:status": "pm2 status",
+    "pm2:monit": "pm2 monit"
   },
   "dependencies": {
     "next": "15.3.3",

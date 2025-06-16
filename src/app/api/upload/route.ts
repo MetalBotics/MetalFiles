@@ -55,12 +55,12 @@ export async function POST(request: NextRequest) {
     // Create uploads directory if it doesn't exist
     const uploadDir = join(process.cwd(), 'uploads');
     
+    // Ensure directory exists without creating unnecessary files
+    const { mkdir } = await import('fs/promises');
     try {
-      await writeFile(join(uploadDir, '.gitkeep'), ''); // Ensure directory exists
-    } catch (err) {
-      // Directory might not exist, create it
-      const { mkdir } = await import('fs/promises');
       await mkdir(uploadDir, { recursive: true });
+    } catch (err) {
+      // Directory already exists, ignore error
     }
     
     // Create a unique filename to avoid conflicts

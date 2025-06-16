@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
+import { readFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { downloadTokens } from '../../tokenStorage';
@@ -40,13 +40,26 @@ export async function GET(
         { status: 404 }
       );
     }
-    
-    // Read the file
+      // Read the file
     const fileBuffer = await readFile(filePath);
     
     // Get file extension for MIME type
     const fileExtension = tokenData.originalName.split('.').pop()?.toLowerCase();
-    const mimeType = getMimeType(fileExtension);    // Return the file with appropriate headers
+    const mimeType = getMimeType(fileExtension);
+      // Delete the token after successful download (one-time use)
+    await downloadTokens.delete(token);
+    console.log(`Token ${token} deleted after successful download of ${tokenData.originalName}`);
+    
+    // Delete the physical file after successful download (one-time use)
+    try {
+      await unlink(filePath);
+      console.log(`Physical file deleted: ${tokenData.filename}`);
+    } catch (deleteError) {
+      console.error('Error deleting physical file:', deleteError);
+      // Don't fail the response if file deletion fails
+    }
+    
+    // Return the file with appropriate headers
     return new NextResponse(new Uint8Array(fileBuffer), {
       status: 200,
       headers: {
