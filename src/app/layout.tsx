@@ -68,8 +68,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={orbitron.variable}>
       <head>
-        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" as="style" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${roboto.variable} ${orbitron.variable} ${ibmPlexMono.variable} ${montserrat.variable} antialiased bg-black text-white min-h-screen`}

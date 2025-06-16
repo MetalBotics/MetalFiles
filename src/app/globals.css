@@ -12,17 +12,19 @@ body {
   font-family: var(--font-roboto), system-ui, sans-serif;
 }
 
-/* Ensure Orbitron font loads properly */
-.font-orbitron {
-  font-family: var(--font-orbitron), "Arial Black", Arial, sans-serif;
+/* Ensure consistent logo sizing */
+.logo-text {
+  font-family: "Arial Black", Arial, sans-serif;
   font-weight: 700;
   letter-spacing: 0.02em;
+  min-height: 2.25rem; /* Prevent layout shift */
+  display: flex;
+  align-items: center;
 }
 
-/* Prevent logo text shifting during font load */
-h1[style*="font-family"] {
-  font-display: swap;
-  text-rendering: optimizeLegibility;
+/* When Orbitron loads */
+.logo-text.orbitron-loaded {
+  font-family: var(--font-orbitron), "Arial Black", Arial, sans-serif;
 }
 
 /* Prevent icon flashing */
