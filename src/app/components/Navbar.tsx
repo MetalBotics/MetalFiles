@@ -19,7 +19,12 @@ export default function Navbar() {
                 priority
                 unoptimized
               />              <h1
-                className="text-3xl font-bold text-white group-hover:text-blue-400 transition-colors duration-300 select-none font-orbitron"
+                className="text-3xl font-bold text-white group-hover:text-blue-400 transition-colors duration-300 select-none"
+                style={{ 
+                  fontFamily: 'var(--font-orbitron), "Arial Black", Arial, sans-serif',
+                  fontWeight: 700,
+                  letterSpacing: '0.02em'
+                }}
               >
                 MetalFiles
               </h1>
