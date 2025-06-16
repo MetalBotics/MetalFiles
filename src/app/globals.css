@@ -12,19 +12,13 @@ body {
   font-family: var(--font-roboto), system-ui, sans-serif;
 }
 
-/* Ensure consistent logo sizing */
+/* Always visible logo text with good fallback */
 .logo-text {
-  font-family: "Arial Black", Arial, sans-serif;
-  font-weight: 700;
+  font-family: var(--font-orbitron), "Arial Black", "Trebuchet MS", Arial, sans-serif !important;
+  font-weight: 700 !important;
   letter-spacing: 0.02em;
-  min-height: 2.25rem; /* Prevent layout shift */
-  display: flex;
-  align-items: center;
-}
-
-/* When Orbitron loads */
-.logo-text.orbitron-loaded {
-  font-family: var(--font-orbitron), "Arial Black", Arial, sans-serif;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* Prevent icon flashing */
