@@ -7,12 +7,14 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {" "}
         <div className="text-center">
-          <h3
-            className="text-2xl font-bold orbitron text-white mb-4"
-            style={{ fontFamily: '"Orbitron", sans-serif' }}
-          >
-            MetalBotics
-          </h3>
+          <Link href="https://metalbotics.tech">
+            <h3
+              className="text-2xl font-bold orbitron text-white mb-4"
+              style={{ fontFamily: '"Orbitron", sans-serif' }}
+            >
+              MetalBotics
+            </h3>
+          </Link>
           <p className="roboto-light text-gray-400 mb-8">
             Building the future of enterprise technology <br />
             &copy; {currentYear} MetalBotics. All rights reserved.

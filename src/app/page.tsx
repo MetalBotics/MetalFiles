@@ -1602,9 +1602,20 @@ export default function Home() {
             </div>
           )}
 
+          {/* Section Separator */}
+          <div className="mt-24 mb-16 flex items-center justify-center">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent"></div>
+            <div className="mx-8 flex items-center space-x-2">
+              <div className="w-2 h-2 rounded-full bg-blue-400/60"></div>
+              <div className="w-2 h-2 rounded-full bg-green-400/60"></div>
+              <div className="w-2 h-2 rounded-full bg-purple-400/60"></div>
+            </div>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent"></div>
+          </div>
+
           {/* Features Section */}
           <div
-            className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8"
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
             style={{
               fontFamily: "Roboto, sans-serif",
               transform: isMounted
@@ -1729,7 +1740,118 @@ export default function Home() {
             </div>
           </div>
         </div>
+        <hr className="mt-16 border-t border-gray-800"></hr>
       </div>
+
+      {/* API Usage Section */}
+      <div className="py-16 bg-black">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+              Command Line Access
+            </h2>
+            <p className="text-gray-400 text-lg">
+              Download files programmatically using wget or curl
+            </p>
+          </div>
+
+          <div className="bg-gray-900/40 backdrop-blur-sm rounded-xl border border-gray-700/30 p-8">
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* wget Instructions */}
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+                  <svg
+                    className="w-5 h-5 text-green-400 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 9l3 3-3 3m5 0h3"
+                    />
+                  </svg>
+                  Using wget
+                </h3>
+                <div className="bg-black/50 rounded-lg p-4 mb-4">
+                  <code className="text-green-400 text-sm block break-all">
+                    wget --content-disposition
+                    "https://metalfiles.tech/api/download/[token]"
+                  </code>
+                </div>
+                <p className="text-gray-400 text-sm">
+                  Replace <span className="text-blue-400">[token]</span> with
+                  your download token. The{" "}
+                  <span className="text-green-400">--content-disposition</span>{" "}
+                  flag ensures the original filename is preserved.
+                </p>
+              </div>
+
+              {/* curl Instructions */}
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+                  <svg
+                    className="w-5 h-5 text-blue-400 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 9l3 3-3 3m5 0h3"
+                    />
+                  </svg>
+                  Using curl
+                </h3>
+                <div className="bg-black/50 rounded-lg p-4 mb-4">
+                  <code className="text-blue-400 text-sm block break-all">
+                    curl -OJ "https://metalfiles.tech/api/download/[token]"
+                  </code>
+                </div>
+                <p className="text-gray-400 text-sm">
+                  The <span className="text-blue-400">-OJ</span> flags save the
+                  file with its original name and follow redirects.
+                </p>
+              </div>
+            </div>
+
+            {/* Important Notes */}
+            <div className="mt-8 p-6 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <h4 className="text-yellow-400 font-semibold mb-2 flex items-center">
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+                Important Notes
+              </h4>
+              <ul className="text-gray-300 text-sm space-y-1">
+                <li>
+                  • Download links are{" "}
+                  <span className="text-red-400">one-time use only</span> - they
+                  become invalid after downloading
+                </li>
+                <li>• Files are automatically decrypted during download</li>
+                <li>• Links expire after 24 hours if not used</li>
+                <li>• Maximum file size: 10GB</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <Footer />
     </>
   );

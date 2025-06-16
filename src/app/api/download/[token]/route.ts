@@ -2,7 +2,82 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import crypto from 'crypto';
 import { downloadTokens } from '../../tokenStorage';
+
+// Server-side decryption function using Node.js crypto
+async function decryptFile(
+  encryptedBuffer: Buffer,
+  password: string,
+  iv: string,
+  salt: string
+): Promise<Buffer> {
+  try {
+    console.log('Decryption parameters:', { 
+      passwordLength: password.length, 
+      ivLength: iv.length, 
+      saltLength: salt.length,
+      encryptedBufferLength: encryptedBuffer.length 
+    });
+      // Convert base64 strings back to buffers (client uses btoa which is base64)
+    let ivBuffer: Buffer;
+    let saltBuffer: Buffer;
+    
+    try {
+      // The client sends IV and salt as base64 (using btoa), not hex
+      ivBuffer = Buffer.from(iv, 'base64');
+      saltBuffer = Buffer.from(salt, 'base64');
+      
+      console.log('Parsed buffer lengths:', { 
+        ivBufferLength: ivBuffer.length, 
+        saltBufferLength: saltBuffer.length 
+      });
+      
+      // AES-GCM requires 12-byte IV
+      if (ivBuffer.length !== 12) {
+        throw new Error(`Invalid IV length: expected 12 bytes, got ${ivBuffer.length}`);
+      }
+      
+      // Salt should be 16 bytes
+      if (saltBuffer.length !== 16) {
+        throw new Error(`Invalid salt length: expected 16 bytes, got ${saltBuffer.length}`);
+      }
+      
+    } catch (parseError) {
+      console.error('Error parsing base64 strings:', parseError);
+      throw new Error('Invalid IV or salt format');
+    }
+    
+    // Derive key from password using PBKDF2 (matching client-side derivation)
+    const keyBuffer = crypto.pbkdf2Sync(password, saltBuffer, 100000, 32, 'sha256');
+    console.log('Key derived, length:', keyBuffer.length);
+    
+    // Create decipher for AES-256-GCM
+    const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuffer, ivBuffer);
+    
+    // For AES-GCM, the auth tag is appended to the encrypted data
+    // Extract the auth tag (last 16 bytes) and the encrypted data
+    const authTag = encryptedBuffer.slice(-16);
+    const encryptedData = encryptedBuffer.slice(0, -16);
+    
+    console.log('Auth tag length:', authTag.length, 'Encrypted data length:', encryptedData.length);
+    
+    decipher.setAuthTag(authTag);
+    
+    // Decrypt the data
+    const decrypted = Buffer.concat([
+      decipher.update(encryptedData),
+      decipher.final()
+    ]);
+    
+    console.log('Decryption successful, decrypted length:', decrypted.length);
+    return decrypted;
+      } catch (error) {
+    console.error('Server-side decryption error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to decrypt file on server: ${errorMessage}`);
+  }
+}
 
 export async function GET(
   request: NextRequest,
@@ -39,38 +114,55 @@ export async function GET(
         { error: 'File not found' }, 
         { status: 404 }
       );
-    }
-      // Read the file
-    const fileBuffer = await readFile(filePath);
+    }    // Read the encrypted file
+    const encryptedBuffer = await readFile(filePath);
     
-    // Get file extension for MIME type
-    const fileExtension = tokenData.originalName.split('.').pop()?.toLowerCase();
-    const mimeType = getMimeType(fileExtension);
-      // Delete the token after successful download (one-time use)
-    await downloadTokens.delete(token);
-    console.log(`Token ${token} deleted after successful download of ${tokenData.originalName}`);
-    
-    // Delete the physical file after successful download (one-time use)
     try {
-      await unlink(filePath);
-      console.log(`Physical file deleted: ${tokenData.filename}`);
-    } catch (deleteError) {
-      console.error('Error deleting physical file:', deleteError);
-      // Don't fail the response if file deletion fails
-    }
-    
-    // Return the file with appropriate headers
-    return new NextResponse(new Uint8Array(fileBuffer), {
-      status: 200,
-      headers: {
-        'Content-Type': mimeType,
-        'Content-Disposition': `attachment; filename="${tokenData.originalName}"`,
-        'Content-Length': fileBuffer.length.toString(),
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+      // Decrypt the file using server-side crypto
+      const decryptedBuffer = await decryptFile(
+        encryptedBuffer,
+        tokenData.encryptionKey,
+        tokenData.iv,
+        tokenData.salt
+      );
+      
+      // Delete the token after successful download (one-time use)
+      await downloadTokens.delete(token);
+      console.log(`Token ${token} deleted after successful download of ${tokenData.originalName}`);
+      
+      // Delete the physical file after successful download (one-time use)
+      try {
+        await unlink(filePath);
+        console.log(`Physical file deleted: ${tokenData.filename}`);
+      } catch (deleteError) {
+        console.error('Error deleting physical file:', deleteError);
+        // Don't fail the response if file deletion fails
       }
-    });
+      
+      // Get file extension for MIME type
+      const fileExtension = tokenData.originalName.split('.').pop()?.toLowerCase();
+      const mimeType = getMimeType(fileExtension);
+      
+      // Return the decrypted file with correct headers
+      return new NextResponse(new Uint8Array(decryptedBuffer), {
+        status: 200,
+        headers: {
+          'Content-Type': mimeType,
+          'Content-Disposition': `attachment; filename="${tokenData.originalName}"`,
+          'Content-Length': decryptedBuffer.length.toString(),
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+    } catch (decryptError) {
+      console.error('Decryption error:', decryptError);
+      return NextResponse.json(
+        { error: 'Failed to decrypt file' }, 
+        { status: 500 }
+      );
+    }
     
   } catch (error) {
     console.error('Download error:', error);
