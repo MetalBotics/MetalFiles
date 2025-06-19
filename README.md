@@ -54,4 +54,4 @@
 
 ---
 
-MetalFiles is purpose-built for secure, temporary transfer of sensitive files, minimizing risks and friction. Discord and Drive are better for collaboration, but not for sharing secrets or files that should disappear after use.
+MetalFiles is purpose-built for secure, temporary transfer of sensitive files, minimizing risks and friction. MetalFiles is not a file storage system, it's a system used to only transfer files between two devices.
