@@ -1,15 +1,15 @@
-# MetalFiles vs. Discord & Google Drive for Secure File Sharing
-
+# MetalFiles File Transfer System
 ## MetalFiles
 
-**Purpose:** Designed specifically for secure, ephemeral file sharing (such as secrets, environment files).
+**Purpose:** Designed specifically for secure, ephemeral file sharing (such as secrets, environment files) and bigger files.
 
 **Benefits:**
 - **Ephemeral Links:** Files are available for a limited time or number of downloads, then deleted automatically.
+- **Big file transfer:** Share up to 10gb files for free!
 - **No Account Required:** Share files without making users register.
 - **No File History:** Files are not stored long-term, reducing accidental leaks.
-- **End-to-End Security:** Typically, files are encrypted in transit and at rest.
-- **No Metadata Leaks:** Minimal data retained—no chat logs or collaboration history.
+- **End-to-End Security:** Files encrypted end-to-end.
+- **No Metadata Leaks:** Encrypted files and all data removed from the server upon download.
 - **Developer-Friendly:** Tailored for secret sharing and developer workflows (e.g., sharing `.env` files, config, secrets).
 
 ---
@@ -44,14 +44,14 @@
 | Feature                   | MetalFiles      | Discord         | Google Drive     |
 |---------------------------|----------------|-----------------|-----------------|
 | Ephemeral Sharing         | ✅             | ❌              | ❌              |
-| No Account Needed         | ✅             | ✅              | ❌              |
+| No Account Needed         | ✅             | ❌              | ❌              |
+| 10gb File Transfer         | ✅             | ❌              | ✅              |
 | Designed for Secrets      | ✅             | ❌              | ❌              |
 | Easy One-Time Links       | ✅             | ❌              | ❌              |
 | Auto-Delete After Access  | ✅             | ❌              | ❌              |
-| Minimal Metadata Retained | ✅             | ❌              | ❌              |
+| Zero Metadata Retained | ✅             | ❌              | ❌              |
 | Access Control Simplicity | ✅             | ❌ (channel)     | ⚠️ (settings)   |
 
 ---
 
-**Bottom Line:**  
 MetalFiles is purpose-built for secure, temporary transfer of sensitive files, minimizing risks and friction. Discord and Drive are better for collaboration, but not for sharing secrets or files that should disappear after use.
