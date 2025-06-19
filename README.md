@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MetalFiles vs. Discord & Google Drive for Secure File Sharing
 
-## Getting Started
+## MetalFiles
 
-First, run the development server:
+**Purpose:** Designed specifically for secure, ephemeral file sharing (such as secrets, environment files).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**Benefits:**
+- **Ephemeral Links:** Files are available for a limited time or number of downloads, then deleted automatically.
+- **No Account Required:** Share files without making users register.
+- **No File History:** Files are not stored long-term, reducing accidental leaks.
+- **End-to-End Security:** Typically, files are encrypted in transit and at rest.
+- **No Metadata Leaks:** Minimal data retained—no chat logs or collaboration history.
+- **Developer-Friendly:** Tailored for secret sharing and developer workflows (e.g., sharing `.env` files, config, secrets).
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Discord
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Purpose:** Real-time chat and collaboration platform.
 
-## Learn More
+**Drawbacks for Sensitive Files:**
+- **Persistence:** Files remain accessible in chat history unless deleted manually.
+- **Not Ephemeral:** No built-in expiry or one-time-download.
+- **Limited Security Controls:** Anyone with access to the channel can download files.
+- **Not Designed for Secrets:** Risk of accidental leaks if channels are public or permissions are misconfigured.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Google Drive (or similar cloud storage)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Purpose:** General cloud file storage and collaboration.
 
-## Deploy on Vercel
+**Drawbacks for Sensitive Files:**
+- **Long-Term Storage:** Files stay until you manually remove them.
+- **Link Sharing Risks:** Shared links can be forwarded, and access controls can be tricky.
+- **Account Requirement:** Recipients often need a Google account.
+- **Audit Trail:** File access and edits are logged (can be good or bad for privacy).
+- **Not Ephemeral:** No easy way to set file expiration or one-time download.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Summary Table
+
+| Feature                   | MetalFiles      | Discord         | Google Drive     |
+|---------------------------|----------------|-----------------|-----------------|
+| Ephemeral Sharing         | ✅             | ❌              | ❌              |
+| No Account Needed         | ✅             | ✅              | ❌              |
+| Designed for Secrets      | ✅             | ❌              | ❌              |
+| Easy One-Time Links       | ✅             | ❌              | ❌              |
+| Auto-Delete After Access  | ✅             | ❌              | ❌              |
+| Minimal Metadata Retained | ✅             | ❌              | ❌              |
+| Access Control Simplicity | ✅             | ❌ (channel)     | ⚠️ (settings)   |
+
+---
+
+**Bottom Line:**  
+MetalFiles is purpose-built for secure, temporary transfer of sensitive files, minimizing risks and friction. Discord and Drive are better for collaboration, but not for sharing secrets or files that should disappear after use.
