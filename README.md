@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MetalFiles File Transfer System
+## MetalFiles
 
-## Getting Started
+**Purpose:** Designed specifically for secure, ephemeral file sharing (such as secrets, environment files) and bigger files.
 
-First, run the development server:
+**Benefits:**
+- **Ephemeral Links:** Files are available for a limited time or number of downloads, then deleted automatically.
+- **Big file transfer:** Share up to 10gb files for free!
+- **No Account Required:** Share files without making users register.
+- **No File History:** Files are not stored long-term, reducing accidental leaks.
+- **End-to-End Security:** Files encrypted end-to-end.
+- **No Metadata Leaks:** Encrypted files and all data removed from the server upon download.
+- **Developer-Friendly:** Tailored for secret sharing and developer workflows (e.g., sharing `.env` files, config, secrets).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Discord
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Purpose:** Real-time chat and collaboration platform.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Drawbacks for Sensitive Files:**
+- **Persistence:** Files remain accessible in chat history unless deleted manually.
+- **Not Ephemeral:** No built-in expiry or one-time-download.
+- **Limited Security Controls:** Anyone with access to the channel can download files.
+- **Not Designed for Secrets:** Risk of accidental leaks if channels are public or permissions are misconfigured.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Google Drive (or similar cloud storage)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Purpose:** General cloud file storage and collaboration.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Drawbacks for Sensitive Files:**
+- **Long-Term Storage:** Files stay until you manually remove them.
+- **Link Sharing Risks:** Shared links can be forwarded, and access controls can be tricky.
+- **Account Requirement:** Recipients often need a Google account.
+- **Audit Trail:** File access and edits are logged (can be good or bad for privacy).
+- **Not Ephemeral:** No easy way to set file expiration or one-time download.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Summary Table
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Feature                   | MetalFiles      | Discord         | Google Drive     |
+|---------------------------|----------------|-----------------|-----------------|
+| Ephemeral Sharing         | ✅             | ❌              | ❌              |
+| No Account Needed         | ✅             | ❌              | ❌              |
+| 10gb File Transfer         | ✅             | ❌              | ✅              |
+| Designed for Secrets      | ✅             | ❌              | ❌              |
+| Easy One-Time Links       | ✅             | ❌              | ❌              |
+| Auto-Delete After Access  | ✅             | ❌              | ❌              |
+| Zero Metadata Retained | ✅             | ❌              | ❌              |
+| Access Control Simplicity | ✅             | ❌ (channel)     | ⚠️ (settings)   |
+
+---
+
+MetalFiles is purpose-built for secure, temporary transfer of sensitive files, minimizing risks and friction. MetalFiles is not a file storage system, it's a system used to only transfer files between two devices.
