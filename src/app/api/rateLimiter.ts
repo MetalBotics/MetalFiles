@@ -72,6 +72,9 @@ class RateLimiter {
 // Create a single shared rate limiter instance for all API endpoints
 export const apiRateLimiter = new RateLimiter(5, 60000); // 5 API calls per minute (shared across all endpoints)
 
+// Special rate limiter for large file uploads (more lenient)
+export const uploadRateLimiter = new RateLimiter(3, 300000); // 3 upload attempts per 5 minutes
+
 // Helper function to get client IP
 export function getClientIP(request: Request): string {
   const forwarded = request.headers.get('x-forwarded-for');

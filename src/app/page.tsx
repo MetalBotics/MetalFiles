@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar";
 import { useState, useRef, useEffect, useReducer } from "react";
 import Footer from "./components/Footer";
 import { FileEncryption } from "./utils/encryption";
+import { UploadDiagnostics } from "./utils/uploadDiagnostics";
 import NoSSR from "./components/NoSSR";
 
 // Suppress hydration warnings in development
@@ -293,6 +294,25 @@ export default function Home() {
       fileArray.map((f) => f.name)
     );
 
+    // Check for large files and show warnings
+    fileArray.forEach(file => {
+      const sizeCheck = UploadDiagnostics.checkFileSize(file);
+      const memoryCheck = UploadDiagnostics.checkMemoryEstimate(file.size);
+      
+      if (!sizeCheck.valid) {
+        console.warn(`File size warning for ${file.name}: ${sizeCheck.message}`);
+      }
+      
+      if (!memoryCheck.valid) {
+        console.warn(`Memory warning for ${file.name}: ${memoryCheck.message}`);
+      }
+      
+      if (file.size > 1024 * 1024 * 1024) { // > 1GB
+        console.log(`Large file detected: ${file.name} (${UploadDiagnostics.formatFileSize(file.size)})`);
+        console.log(UploadDiagnostics.estimateUploadTime(file.size));
+      }
+    });
+
     // Replace selected files instead of appending
     setSelectedFiles(fileArray);
     console.log(
@@ -507,6 +527,26 @@ export default function Home() {
         } catch (error) {
           clearInterval(progressInterval);
           console.error(`Error uploading ${file.name}:`, error);
+          
+          // Provide specific error messages based on error type
+          let errorMessage = 'Upload failed';
+          if (error instanceof Error) {
+            if (error.message.includes('File too large')) {
+              errorMessage = 'File too large (max 10GB)';
+            } else if (error.message.includes('timeout')) {
+              errorMessage = 'Upload timeout - try again';
+            } else if (error.message.includes('network') || error.message.includes('fetch')) {
+              errorMessage = 'Network error - check connection';
+            } else if (error.message.includes('413')) {
+              errorMessage = 'File too large for server';
+            } else if (error.message.includes('429')) {
+              errorMessage = 'Too many requests - wait and retry';
+            } else if (error.message.includes('memory')) {
+              errorMessage = 'Server memory limit reached';
+            }
+          }
+          
+          console.error(`Upload error for ${file.name}: ${errorMessage}`);
           setUploadStatus((prev) => ({ ...prev, [fileKey]: "error" }));
           setUploadProgress((prev) => ({ ...prev, [fileKey]: 0 }));
         }

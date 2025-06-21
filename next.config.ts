@@ -12,6 +12,27 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '10gb',
     },
+    // Increase memory limits for large files
+    largePageDataBytes: 128 * 1000000, // 128MB for page data
+    // Enable large payloads
+    allowedRevalidateHeaderKeys: ['x-revalidate'],
+  },
+
+  // Custom server configuration for large file handling
+  serverRuntimeConfig: {
+    maxFileSize: '10gb',
+  },
+
+  // Set custom webpack config for larger payloads
+  webpack: (config: any, { isServer }) => {
+    if (isServer) {
+      // Server-side configurations for large files
+      config.node = {
+        ...config.node,
+        fs: 'empty'
+      };
+    }
+    return config;
   },
   
   // Configure on-demand entries for better performance
