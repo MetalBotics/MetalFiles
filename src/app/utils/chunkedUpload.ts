@@ -95,11 +95,9 @@ export class ChunkedUpload {
 
       if (!response.ok) {
         throw new Error(`Chunk upload failed: ${response.status}`);
-      }
-
-      // Update progress
+      }      // Update progress
       if (onProgress) {
-        const progress = ((chunkIndex + 1) / totalChunks) * 100;
+        const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
         onProgress(progress);
       }
 

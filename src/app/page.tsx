@@ -475,7 +475,7 @@ export default function Home() {
               metadataIv,
               (progress) => {
                 // Map chunked upload progress (20-100%)
-                const mappedProgress = 20 + (progress * 0.8);
+                const mappedProgress = Math.round(20 + (progress * 0.8));
                 setUploadProgress((prev) => ({ ...prev, [fileKey]: mappedProgress }));
               }
             );
@@ -1290,7 +1290,7 @@ export default function Home() {
                                   : status === "error"
                                   ? "Failed"
                                   : status === "uploading"
-                                  ? `${progress}%`
+                                  ? `${Math.round(progress)}%`
                                   : "Pending"}
                               </span>
                             </div>
@@ -1307,7 +1307,7 @@ export default function Home() {
                                 <div className="w-32 bg-gray-700 rounded-full h-2 ml-4">
                                   <div
                                     className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${progress}%` }}
+                                    style={{ width: `${Math.round(progress)}%` }}
                                   ></div>
                                 </div>
                               )}
