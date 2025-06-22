@@ -26,10 +26,13 @@ const nextConfig: NextConfig = {
   // Set custom webpack config for larger payloads
   webpack: (config: any, { isServer }) => {
     if (isServer) {
-      // Server-side configurations for large files
-      config.node = {
-        ...config.node,
-        fs: 'empty'
+      // Server-side configurations for large files - webpack 5 syntax
+      config.resolve = config.resolve || {};
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
       };
     }
     return config;
