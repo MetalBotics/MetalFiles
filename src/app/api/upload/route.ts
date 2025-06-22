@@ -4,7 +4,6 @@ import { join } from 'path';
 import crypto from 'crypto';
 import { downloadTokens, cleanupExpiredTokens } from '../tokenStorage';
 import { uploadRateLimiter, checkRateLimit } from '../rateLimiter';
-import { LargeFileParser } from './largeFileParser';
 
 // Configure for large file uploads
 export const runtime = 'nodejs';
@@ -16,7 +15,13 @@ export const dynamic = 'force-dynamic';
 // Custom body parser configuration
 const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10GB in bytes
 
-export async function POST(request: NextRequest) {  try {    // Check rate limit first (use special upload rate limiter for large files)
+export async function POST(request: NextRequest) {
+  console.log('=== UPLOAD REQUEST START ===');
+  console.log('Content-Length:', request.headers.get('content-length'));
+  console.log('Content-Type:', request.headers.get('content-type'));
+  console.log('User-Agent:', request.headers.get('user-agent'));
+  
+  try {    // Check rate limit first (use special upload rate limiter for large files)
     const rateLimit = checkRateLimit(uploadRateLimiter, request);
       if (!rateLimit.allowed) {
       console.log(`Rate limit exceeded for IP: ${rateLimit.ip}`);
@@ -52,17 +57,34 @@ export async function POST(request: NextRequest) {  try {    // Check rate limit
         );
       }    }
 
-    // Use custom parser for large files
+    // Parse form data with extended timeout for large files
     let data: FormData;
     try {
       console.log('Parsing form data for large file upload...');
-      data = await LargeFileParser.parseFormData(request, MAX_FILE_SIZE);
+      console.log('Content-Length:', request.headers.get('content-length'));
+        // Use Next.js built-in formData() with timeout protection
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Upload timeout - file may be too large or connection too slow')), 15 * 60 * 1000); // 15 minutes
+      });
+
+      const formDataPromise = request.formData();
+      
+      data = await Promise.race([formDataPromise, timeoutPromise]);
       console.log('Form data parsed successfully');
     } catch (parseError) {
       console.error('Error parsing form data:', parseError);
+      const errorMessage = parseError instanceof Error ? parseError.message : 'Failed to parse upload data';
+      
+      if (errorMessage.includes('timeout')) {
+        return NextResponse.json({
+          success: false,
+          error: 'Upload timeout. File may be too large or connection too slow. Try a smaller file or better connection.'
+        }, { status: 408 });
+      }
+      
       return NextResponse.json({
         success: false,
-        error: parseError instanceof Error ? parseError.message : 'Failed to parse upload data'
+        error: errorMessage
       }, { status: 400 });
     }
     
@@ -87,16 +109,12 @@ export async function POST(request: NextRequest) {  try {    // Check rate limit
     });    if (!encryptedFile || !encryptionKey || !iv || !salt || !metadataIv || !originalName) {
       console.log('Missing required fields');
       return NextResponse.json({ success: false, error: 'Missing required encryption data.' }, { status: 400 });
-    }
-
-    // Validate file sizes using the parser
-    try {
-      LargeFileParser.validateFileSize(encryptedFile, MAX_FILE_SIZE);
-    } catch (sizeError) {
-      console.log('File size validation failed:', sizeError);
+    }    // Validate file sizes
+    if (encryptedFile.size > MAX_FILE_SIZE) {
+      console.log(`Encrypted file too large: ${encryptedFile.size} bytes (max: ${MAX_FILE_SIZE})`);
       return NextResponse.json({ 
         success: false, 
-        error: sizeError instanceof Error ? sizeError.message : 'File too large' 
+        error: `File too large. Maximum file size is ${MAX_FILE_SIZE / (1024 * 1024 * 1024)}GB.` 
       }, { status: 413 });
     }
 
@@ -124,27 +142,30 @@ export async function POST(request: NextRequest) {  try {    // Check rate limit
     // Create a unique filename to avoid conflicts
     const timestamp = Date.now();
     const filename = `${timestamp}-encrypted`;
-    const path = join(uploadDir, filename);    // For large files, use the specialized processing
-    if (encryptedFile.size > 100 * 1024 * 1024) { // 100MB threshold for streaming
-      console.log('Using large file processing approach');
+    const path = join(uploadDir, filename);    // Process the file based on size
+    if (encryptedFile.size > 100 * 1024 * 1024) { // 100MB threshold for special handling
+      console.log('Processing large file (>100MB)');
       
       try {
-        const arrayBuffer = await LargeFileParser.processLargeFile(encryptedFile);
+        console.log(`Processing large file: ${encryptedFile.name} (${encryptedFile.size} bytes)`);
+        const arrayBuffer = await encryptedFile.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         await writeFile(path, buffer);
         console.log(`Large file written successfully: ${filename}, size: ${buffer.length} bytes`);
-      } catch (streamError) {
-        console.error('Error processing large file:', streamError);
+      } catch (processingError) {
+        console.error('Error processing large file:', processingError);
         return NextResponse.json({ 
           success: false, 
           error: 'Failed to process large file. Please try again or reduce file size.' 
         }, { status: 500 });
       }
     } else {
-      // For smaller files, use the original approach
+      // For smaller files, use the standard approach
+      console.log('Processing normal file (<100MB)');
       const bytes = await encryptedFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
       await writeFile(path, buffer);
+      console.log(`File written successfully: ${filename}, size: ${buffer.length} bytes`);
     }
     
     // Generate a secure download token
