@@ -6,6 +6,7 @@ import { useState, useRef, useEffect, useReducer } from "react";
 import Footer from "./components/Footer";
 import { FileEncryption } from "./utils/encryption";
 import { UploadDiagnostics } from "./utils/uploadDiagnostics";
+import { ChunkedUpload } from "./utils/chunkedUpload";
 import NoSSR from "./components/NoSSR";
 
 // Suppress hydration warnings in development
@@ -93,6 +94,9 @@ export default function Home() {
   }>({});
   const [uploadStatus, setUploadStatus] = useState<{
     [key: string]: "pending" | "uploading" | "success" | "error";
+  }>({});
+  const [chunkedFiles, setChunkedFiles] = useState<{
+    [key: string]: boolean;
   }>({});
   const [downloadUrls, dispatchDownloadUrls] = useReducer(
     downloadUrlsReducer,
@@ -307,8 +311,11 @@ export default function Home() {
         console.warn(`Memory warning for ${file.name}: ${memoryCheck.message}`);
       }
       
+      if (file.size > 100 * 1024 * 1024) { // > 100MB - chunked upload threshold
+        console.log(`Large file detected: ${file.name} (${UploadDiagnostics.formatFileSize(file.size)}) - will use chunked upload`);
+      }
+      
       if (file.size > 1024 * 1024 * 1024) { // > 1GB
-        console.log(`Large file detected: ${file.name} (${UploadDiagnostics.formatFileSize(file.size)})`);
         console.log(UploadDiagnostics.estimateUploadTime(file.size));
       }
     });
@@ -361,6 +368,9 @@ export default function Home() {
     );
     console.log("File being removed:", selectedFiles[index]?.name);
 
+    const fileToRemove = selectedFiles[index];
+    const fileKey = `${fileToRemove.name}-${index}`;
+
     setSelectedFiles((prev) => {
       const filtered = prev.filter((_, i) => i !== index);
       console.log(
@@ -368,6 +378,13 @@ export default function Home() {
         filtered.map((f) => f.name)
       );
       return filtered;
+    });
+
+    // Clear related state
+    setChunkedFiles((prev) => {
+      const updated = { ...prev };
+      delete updated[fileKey];
+      return updated;
     });
 
     // Clear the file input to prevent caching issues
@@ -415,21 +432,9 @@ export default function Home() {
 
         setUploadStatus((prev) => ({ ...prev, [fileKey]: "uploading" }));
 
-        // Simulate progress for better UX
-        const progressInterval = setInterval(() => {
-          setUploadProgress((prev) => {
-            const currentProgress = prev[fileKey] || 0;
-            if (currentProgress < 70) {
-              // Leave room for encryption progress
-              return { ...prev, [fileKey]: currentProgress + 10 };
-            }
-            return prev;
-          });
-        }, 200);
-
         try {
           // Encrypt the file client-side
-          setUploadProgress((prev) => ({ ...prev, [fileKey]: 70 }));
+          setUploadProgress((prev) => ({ ...prev, [fileKey]: 10 }));
           console.log("Starting encryption for file:", file.name);
 
           let encryptionResult;
@@ -447,85 +452,114 @@ export default function Home() {
             );
           }
 
-          setUploadProgress((prev) => ({ ...prev, [fileKey]: 80 }));
+          setUploadProgress((prev) => ({ ...prev, [fileKey]: 20 }));
 
-          // Create encrypted file blob
-          const encryptedBlob = new Blob([encryptionResult.encryptedData], {
-            type: "application/octet-stream",
-          });
-          const encryptedFile = new File(
-            [encryptedBlob],
-            `encrypted-${file.name}`,
-            { type: "application/octet-stream" }
-          );
+          // Determine upload method based on file size
+          const encryptedSize = encryptionResult.encryptedData.byteLength;
+          const CHUNK_THRESHOLD = 100 * 1024 * 1024; // 100MB threshold for chunked upload
+          
+          let result;
+          
+          if (encryptedSize > CHUNK_THRESHOLD) {
+            console.log(`Large file detected (${UploadDiagnostics.formatFileSize(encryptedSize)}), using chunked upload`);
+            
+            // Mark as chunked file
+            setChunkedFiles((prev) => ({ ...prev, [fileKey]: true }));
+            
+            // Use chunked upload for large files
+            const metadataIv = btoa(String.fromCharCode(...encryptionResult.iv));
+            
+            result = await ChunkedUpload.uploadFileInChunks(
+              file,
+              encryptionResult,
+              metadataIv,
+              (progress) => {
+                // Map chunked upload progress (20-100%)
+                const mappedProgress = 20 + (progress * 0.8);
+                setUploadProgress((prev) => ({ ...prev, [fileKey]: mappedProgress }));
+              }
+            );
+          } else {
+            console.log(`Standard file size (${UploadDiagnostics.formatFileSize(encryptedSize)}), using single request upload`);
+            
+            // Mark as non-chunked file
+            setChunkedFiles((prev) => ({ ...prev, [fileKey]: false }));
+            
+            // Use standard upload for smaller files
+            const encryptedBlob = new Blob([encryptionResult.encryptedData], {
+              type: "application/octet-stream",
+            });
+            const encryptedFile = new File(
+              [encryptedBlob],
+              `encrypted-${file.name}`,
+              { type: "application/octet-stream" }
+            );
 
-          const formData = new FormData();
-          formData.append("encryptedFile", encryptedFile);
-          formData.append("encryptionKey", encryptionResult.key);
-          formData.append(
-            "iv",
-            btoa(String.fromCharCode(...encryptionResult.iv))
-          );
-          formData.append(
-            "salt",
-            btoa(String.fromCharCode(...encryptionResult.salt))
-          );
-          formData.append(
-            "metadataIv",
-            btoa(String.fromCharCode(...encryptionResult.iv))
-          ); // Use same IV for now
-          formData.append("originalName", file.name);
-          formData.append("originalSize", file.size.toString());
+            const formData = new FormData();
+            formData.append("encryptedFile", encryptedFile);
+            formData.append("encryptionKey", encryptionResult.key);
+            formData.append(
+              "iv",
+              btoa(String.fromCharCode(...encryptionResult.iv))
+            );
+            formData.append(
+              "salt",
+              btoa(String.fromCharCode(...encryptionResult.salt))
+            );
+            formData.append(
+              "metadataIv",
+              btoa(String.fromCharCode(...encryptionResult.iv))
+            ); // Use same IV for now
+            formData.append("originalName", file.name);
+            formData.append("originalSize", file.size.toString());
 
-          console.log("FormData prepared, sending to server...");
-          setUploadProgress((prev) => ({ ...prev, [fileKey]: 90 }));
+            console.log("FormData prepared, sending to server...");
+            setUploadProgress((prev) => ({ ...prev, [fileKey]: 90 }));
 
-          const response = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
+            const response = await fetch("/api/upload", {
+              method: "POST",
+              body: formData,
+            });
 
-          clearInterval(progressInterval);
-
-          if (response.ok) {
-            const result = await response.json();
-            setUploadStatus((prev) => ({ ...prev, [fileKey]: "success" }));
-            setUploadProgress((prev) => ({ ...prev, [fileKey]: 100 }));
-
-            // Store the download URL
-            if (result.downloadUrl && result.downloadToken) {
-              const newItem = {
-                id: result.downloadToken, // Use the actual token as ID for uniqueness
-                fileName: result.originalName || file.name,
-                downloadUrl: result.downloadUrl,
-                expiresAt: result.expiresAt,
-              };
-
-              console.log("=== UPLOAD SUCCESS ===");
-              console.log("New item to add:", newItem);
-              console.log(
-                "Current downloadUrls before adding:",
-                downloadUrls.map((item) => ({
-                  id: item.id,
-                  fileName: item.fileName,
-                }))
-              );
-
-              dispatchDownloadUrls({ type: "ADD", payload: newItem });
-
-              // Validate the new link
-              validateDownloadLink(newItem.id);
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
             }
 
-            console.log("Upload successful:", result);
-          } else {
-            const errorData = await response.json();
-            throw new Error(
-              errorData.error || `Upload failed: ${response.statusText}`
-            );
+            result = await response.json();
           }
+          
+          // Process successful result
+          setUploadStatus((prev) => ({ ...prev, [fileKey]: "success" }));
+          setUploadProgress((prev) => ({ ...prev, [fileKey]: 100 }));
+
+          // Store the download URL
+          if (result.downloadUrl && result.downloadToken) {
+            const newItem = {
+              id: result.downloadToken, // Use the actual token as ID for uniqueness
+              fileName: result.originalName || file.name,
+              downloadUrl: result.downloadUrl,
+              expiresAt: result.expiresAt,
+            };
+
+            console.log("=== UPLOAD SUCCESS ===");
+            console.log("New item to add:", newItem);
+            console.log(
+              "Current downloadUrls before adding:",
+              downloadUrls.map((item) => ({
+                id: item.id,
+                fileName: item.fileName,
+              }))
+            );
+
+            dispatchDownloadUrls({ type: "ADD", payload: newItem });
+
+            // Validate the new link
+            validateDownloadLink(newItem.id);
+          }
+
+          console.log("Upload successful:", result);
         } catch (error) {
-          clearInterval(progressInterval);
           console.error(`Error uploading ${file.name}:`, error);
           
           // Provide specific error messages based on error type
@@ -1263,6 +1297,11 @@ export default function Home() {
                             <div className="flex items-center justify-between">
                               <p className="text-sm text-gray-400">
                                 {formatFileSize(file.size)}
+                                {chunkedFiles[fileKey] && (
+                                  <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
+                                    Chunked Upload
+                                  </span>
+                                )}
                               </p>
                               {status === "uploading" && (
                                 <div className="w-32 bg-gray-700 rounded-full h-2 ml-4">
@@ -1364,6 +1403,7 @@ export default function Home() {
                     onClick={() => {
                       console.log("=== CLEAR ALL FILES ===");
                       setSelectedFiles([]);
+                      setChunkedFiles({});
                       // Clear the file input to prevent caching issues
                       if (fileInputRef.current) {
                         fileInputRef.current.value = "";
