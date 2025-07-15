@@ -299,23 +299,33 @@ export default function Home() {
     );
 
     // Check for large files and show warnings
-    fileArray.forEach(file => {
+    fileArray.forEach((file) => {
       const sizeCheck = UploadDiagnostics.checkFileSize(file);
       const memoryCheck = UploadDiagnostics.checkMemoryEstimate(file.size);
-      
+
       if (!sizeCheck.valid) {
-        console.warn(`File size warning for ${file.name}: ${sizeCheck.message}`);
+        console.warn(
+          `File size warning for ${file.name}: ${sizeCheck.message}`
+        );
       }
-      
+
       if (!memoryCheck.valid) {
         console.warn(`Memory warning for ${file.name}: ${memoryCheck.message}`);
       }
-      
-      if (file.size > 100 * 1024 * 1024) { // > 100MB - chunked upload threshold
-        console.log(`Large file detected: ${file.name} (${UploadDiagnostics.formatFileSize(file.size)}) - will use chunked upload`);
+
+      if (file.size > 100 * 1024 * 1024) {
+        // > 100MB - chunked upload threshold
+        console.log(
+          `Large file detected: ${
+            file.name
+          } (${UploadDiagnostics.formatFileSize(
+            file.size
+          )}) - will use chunked upload`
+        );
       }
-      
-      if (file.size > 1024 * 1024 * 1024) { // > 1GB
+
+      if (file.size > 1024 * 1024 * 1024) {
+        // > 1GB
         console.log(UploadDiagnostics.estimateUploadTime(file.size));
       }
     });
@@ -457,34 +467,47 @@ export default function Home() {
           // Determine upload method based on file size
           const encryptedSize = encryptionResult.encryptedData.byteLength;
           const CHUNK_THRESHOLD = 100 * 1024 * 1024; // 100MB threshold for chunked upload
-          
+
           let result;
-          
+
           if (encryptedSize > CHUNK_THRESHOLD) {
-            console.log(`Large file detected (${UploadDiagnostics.formatFileSize(encryptedSize)}), using chunked upload`);
-            
+            console.log(
+              `Large file detected (${UploadDiagnostics.formatFileSize(
+                encryptedSize
+              )}), using chunked upload`
+            );
+
             // Mark as chunked file
             setChunkedFiles((prev) => ({ ...prev, [fileKey]: true }));
-            
+
             // Use chunked upload for large files
-            const metadataIv = btoa(String.fromCharCode(...encryptionResult.iv));
-            
+            const metadataIv = btoa(
+              String.fromCharCode(...encryptionResult.iv)
+            );
+
             result = await ChunkedUpload.uploadFileInChunks(
               file,
               encryptionResult,
               metadataIv,
               (progress) => {
                 // Map chunked upload progress (20-100%)
-                const mappedProgress = Math.round(20 + (progress * 0.8));
-                setUploadProgress((prev) => ({ ...prev, [fileKey]: mappedProgress }));
+                const mappedProgress = Math.round(20 + progress * 0.8);
+                setUploadProgress((prev) => ({
+                  ...prev,
+                  [fileKey]: mappedProgress,
+                }));
               }
             );
           } else {
-            console.log(`Standard file size (${UploadDiagnostics.formatFileSize(encryptedSize)}), using single request upload`);
-            
+            console.log(
+              `Standard file size (${UploadDiagnostics.formatFileSize(
+                encryptedSize
+              )}), using single request upload`
+            );
+
             // Mark as non-chunked file
             setChunkedFiles((prev) => ({ ...prev, [fileKey]: false }));
-            
+
             // Use standard upload for smaller files
             const encryptedBlob = new Blob([encryptionResult.encryptedData], {
               type: "application/octet-stream",
@@ -523,12 +546,14 @@ export default function Home() {
 
             if (!response.ok) {
               const errorData = await response.json();
-              throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
+              throw new Error(
+                errorData.error || `Upload failed: ${response.statusText}`
+              );
             }
 
             result = await response.json();
           }
-          
+
           // Process successful result
           setUploadStatus((prev) => ({ ...prev, [fileKey]: "success" }));
           setUploadProgress((prev) => ({ ...prev, [fileKey]: 100 }));
@@ -561,25 +586,28 @@ export default function Home() {
           console.log("Upload successful:", result);
         } catch (error) {
           console.error(`Error uploading ${file.name}:`, error);
-          
+
           // Provide specific error messages based on error type
-          let errorMessage = 'Upload failed';
+          let errorMessage = "Upload failed";
           if (error instanceof Error) {
-            if (error.message.includes('File too large')) {
-              errorMessage = 'File too large (max 10GB)';
-            } else if (error.message.includes('timeout')) {
-              errorMessage = 'Upload timeout - try again';
-            } else if (error.message.includes('network') || error.message.includes('fetch')) {
-              errorMessage = 'Network error - check connection';
-            } else if (error.message.includes('413')) {
-              errorMessage = 'File too large for server';
-            } else if (error.message.includes('429')) {
-              errorMessage = 'Too many requests - wait and retry';
-            } else if (error.message.includes('memory')) {
-              errorMessage = 'Server memory limit reached';
+            if (error.message.includes("File too large")) {
+              errorMessage = "File too large (max 10GB)";
+            } else if (error.message.includes("timeout")) {
+              errorMessage = "Upload timeout - try again";
+            } else if (
+              error.message.includes("network") ||
+              error.message.includes("fetch")
+            ) {
+              errorMessage = "Network error - check connection";
+            } else if (error.message.includes("413")) {
+              errorMessage = "File too large for server";
+            } else if (error.message.includes("429")) {
+              errorMessage = "Too many requests - wait and retry";
+            } else if (error.message.includes("memory")) {
+              errorMessage = "Server memory limit reached";
             }
           }
-          
+
           console.error(`Upload error for ${file.name}: ${errorMessage}`);
           setUploadStatus((prev) => ({ ...prev, [fileKey]: "error" }));
           setUploadProgress((prev) => ({ ...prev, [fileKey]: 0 }));
@@ -1307,7 +1335,9 @@ export default function Home() {
                                 <div className="w-32 bg-gray-700 rounded-full h-2 ml-4">
                                   <div
                                     className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                                    style={{ width: `${Math.round(progress)}%` }}
+                                    style={{
+                                      width: `${Math.round(progress)}%`,
+                                    }}
                                   ></div>
                                 </div>
                               )}

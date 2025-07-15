@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 
 export default function Navbar() {
   return (
@@ -15,26 +14,15 @@ export default function Navbar() {
               className="group cursor-pointer flex items-center gap-4"
             >
               <div className="w-10 h-10 flex items-center justify-center favicon-container">
-                <Image
+                <img
                   src="/favicon.ico"
                   alt="MetalFiles Icon"
-                  width={40}
-                  height={40}
+                  width="40"
+                  height="40"
                   className="group-hover:scale-110 transition-transform duration-300"
-                  priority
-                  style={{
-                    width: "40px",
-                    height: "40px",
-                    display: "block",
-                    opacity: 1,
-                    visibility: "visible",
-                  }}
                   onError={(e) => {
-                    // Fallback to regular img if Next.js Image fails
-                    const target = e.target as HTMLImageElement;
-                    if (target.src !== "/favicon.ico") {
-                      target.src = "/favicon.ico";
-                    }
+                    console.log("Favicon failed to load");
+                    e.currentTarget.style.display = 'none';
                   }}
                 />
               </div>
