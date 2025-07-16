@@ -27,7 +27,7 @@ export default function Navbar() {
                 />
               </div>
               <h1 className="text-3xl font-bold text-white group-hover:text-blue-400 transition-colors duration-300 select-none logo-text">
-                MetalFiles v2
+                MetalFiles
               </h1>
             </Link>
           </div>
