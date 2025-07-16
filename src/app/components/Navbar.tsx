@@ -22,12 +22,12 @@ export default function Navbar() {
                   className="group-hover:scale-110 transition-transform duration-300"
                   onError={(e) => {
                     console.log("Favicon failed to load");
-                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.style.display = "none";
                   }}
                 />
               </div>
               <h1 className="text-3xl font-bold text-white group-hover:text-blue-400 transition-colors duration-300 select-none logo-text">
-                MetalFiles
+                MetalFiles v2
               </h1>
             </Link>
           </div>
