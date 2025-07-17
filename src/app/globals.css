@@ -1,24 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #000000;
+  --foreground: #00ff00;
+  --accent: #00aa00;
+  --border: #003300;
+  --secondary: #111111;
 }
 
 /* Prevent font flashing */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-roboto), system-ui, sans-serif;
+  font-family: var(--font-roboto), "Courier New", monospace;
 }
 
 /* Always visible logo text with good fallback */
 .logo-text {
-  font-family: var(--font-orbitron), "Arial Black", "Trebuchet MS", Arial, sans-serif !important;
+  font-family: var(--font-orbitron), "Courier New", "Arial Black", monospace !important;
   font-weight: 700 !important;
   letter-spacing: 0.02em;
   opacity: 1 !important;
   visibility: visible !important;
+  color: #00ff00 !important;
 }
 
 /* Prevent icon flashing - force visibility */
@@ -39,10 +43,45 @@ img[src="/favicon.ico"] {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #111111;
+  border: 2px solid #00ff00;
 }
 
 /* Ensure Orbitron font loads immediately */
 .font-orbitron {
-  font-family: var(--font-orbitron), system-ui, sans-serif;
+  font-family: var(--font-orbitron), "Courier New", monospace;
   font-display: swap;
+}
+
+/* Matrix-style green theme */
+.matrix-green {
+  background: linear-gradient(135deg, #000000 0%, #001100 50%, #000000 100%);
+  border: 2px solid #00ff00;
+  color: #00ff00;
+}
+
+.matrix-button {
+  background: #000000;
+  border: 2px solid #00ff00;
+  color: #00ff00;
+  font-family: "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.matrix-button:hover {
+  background: #00ff00;
+  color: #000000;
+  box-shadow: 0 0 20px #00ff00;
+}
+
+/* Terminal-style animations */
+@keyframes terminal-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.terminal-cursor::after {
+  content: '█';
+  animation: terminal-blink 1s infinite;
 }

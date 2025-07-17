@@ -179,14 +179,35 @@ export default function DownloadPage() {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p
-              className="text-white"
-              style={{ fontFamily: "Roboto, sans-serif" }}
-            >
-              Loading file information...
+        <div className="min-h-screen bg-black text-green-500 font-mono flex items-center justify-center">
+          <div 
+            className="absolute inset-0 opacity-5"
+            style={{
+              backgroundImage: `
+                linear-gradient(90deg, #00ff00 1px, transparent 1px),
+                linear-gradient(#00ff00 1px, transparent 1px)
+              `,
+              backgroundSize: '20px 20px'
+            }}
+          />
+          <div className="text-center relative z-10">
+            <div className="animate-spin text-green-500 mx-auto mb-4">
+              <svg
+                className="w-12 h-12"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </div>
+            <p className="text-green-400 font-mono">
+              SCANNING FILE MATRIX...
             </p>
           </div>
         </div>
@@ -199,9 +220,19 @@ export default function DownloadPage() {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
-          <div className="max-w-md mx-auto text-center p-8">
-            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div className="min-h-screen bg-black text-green-500 font-mono flex items-center justify-center">
+          <div 
+            className="absolute inset-0 opacity-5"
+            style={{
+              backgroundImage: `
+                linear-gradient(90deg, #00ff00 1px, transparent 1px),
+                linear-gradient(#00ff00 1px, transparent 1px)
+              `,
+              backgroundSize: '20px 20px'
+            }}
+          />
+          <div className="max-w-md mx-auto text-center p-8 relative z-10">
+            <div className="w-16 h-16 bg-red-900 border-2 border-red-500 flex items-center justify-center mx-auto mb-6">
               <svg
                 className="w-8 h-8 text-red-400"
                 fill="none"
@@ -216,24 +247,17 @@ export default function DownloadPage() {
                 />
               </svg>
             </div>
-            <h1
-              className="text-2xl font-bold text-white mb-4"
-              style={{ fontFamily: "Orbitron, monospace" }}
-            >
-              File Not Found
+            <h1 className="text-2xl font-bold text-red-500 mb-4 font-mono">
+              [FILE_NOT_FOUND]
             </h1>
-            <p
-              className="text-gray-400 mb-6"
-              style={{ fontFamily: "Roboto, sans-serif" }}
-            >
-              {error || "The download link is invalid or has expired."}
+            <p className="text-red-400 mb-6 font-mono">
+              {error || "THE DOWNLOAD LINK IS INVALID OR HAS EXPIRED."}
             </p>
             <a
               href="/"
-              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors duration-200"
-              style={{ fontFamily: "Roboto, sans-serif" }}
+              className="matrix-button px-6 py-3 font-mono"
             >
-              Go Back Home
+              [RETURN_HOME]
             </a>
           </div>
         </div>
@@ -245,22 +269,26 @@ export default function DownloadPage() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
-        {/* Background Elements */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-40 right-20 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-green-500/10 rounded-full blur-3xl"></div>
-        </div>
+      <div className="min-h-screen bg-black text-green-500 font-mono">
+        <div 
+          className="absolute inset-0 opacity-5"
+          style={{
+            backgroundImage: `
+              linear-gradient(90deg, #00ff00 1px, transparent 1px),
+              linear-gradient(#00ff00 1px, transparent 1px)
+            `,
+            backgroundSize: '20px 20px'
+          }}
+        />
 
-        <div className="relative pt-20 pb-20">
+        <div className="relative pt-20 pb-20 z-10">
           <div className="max-w-2xl mx-auto px-6">
-            <div className="bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-8">
+            <div className="bg-black border-2 border-green-500 p-8 rounded-none">
               {/* Header */}
               <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-black border-2 border-green-400 flex items-center justify-center mx-auto mb-4">
                   <svg
-                    className="w-8 h-8 text-blue-400"
+                    className="w-8 h-8 text-green-400"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -273,26 +301,20 @@ export default function DownloadPage() {
                     />
                   </svg>
                 </div>
-                <h1
-                  className="text-3xl font-bold text-white mb-2"
-                  style={{ fontFamily: "Orbitron, monospace" }}
-                >
-                  File Download
+                <h1 className="text-3xl font-bold text-green-500 mb-2 font-mono">
+                  {"> FILE_DOWNLOAD_INTERFACE"}
                 </h1>
-                <p
-                  className="text-gray-400"
-                  style={{ fontFamily: "Roboto, sans-serif" }}
-                >
-                  Your file is ready for download
+                <p className="text-green-400 font-mono">
+                  YOUR FILE IS READY FOR DOWNLOAD
                 </p>
               </div>
 
               {/* File Info */}
-              <div className="bg-gray-800/50 rounded-xl border border-gray-700/30 p-6 mb-8">
-                <div className="flex items-start justify-between mb-4">                  <div className="flex-1 min-w-0 pr-4">                    <h2
-                      className="text-xl font-semibold text-white mb-2 break-words overflow-wrap-anywhere hyphens-auto"
+              <div className="bg-black border border-green-400 p-6 mb-8 rounded-none">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <h2 className="text-xl font-semibold text-green-500 mb-2 break-words font-mono"
                       style={{ 
-                        fontFamily: "Roboto, sans-serif",
                         wordBreak: "break-word",
                         overflowWrap: "anywhere"
                       }}
@@ -300,11 +322,11 @@ export default function DownloadPage() {
                     >
                       {fileInfo.originalName}
                     </h2>
-                    <p className="text-gray-400 text-sm">
-                      Size: {formatFileSize(fileInfo.size)}
+                    <p className="text-green-300 text-sm font-mono">
+                      SIZE: {formatFileSize(fileInfo.size)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-green-400 text-sm">
+                  <div className="flex items-center gap-2 text-green-400 text-sm font-mono">
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -318,29 +340,26 @@ export default function DownloadPage() {
                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </svg>
-                    Valid
+                    [VALID]
                   </div>
                 </div>
-                <div className="text-gray-400 text-sm">
-                  <strong>Expires:</strong>{" "}
+                <div className="text-green-300 text-sm font-mono">
+                  <strong>EXPIRES:</strong>{" "}
                   {new Date(fileInfo.expiresAt).toLocaleString()}
                 </div>
               </div>
 
               {/* Download Button */}
               <div className="text-center">
-                {" "}
                 <button
                   onClick={() => handleDownload()}
                   disabled={downloading}
-                  className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ fontFamily: "Roboto, sans-serif" }}
+                  className="matrix-button px-8 py-4 text-lg font-mono"
                 >
-                  {" "}
                   {downloading ? (
                     <>
                       <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-green-500"
                         fill="none"
                         viewBox="0 0 24 24"
                       >
@@ -359,8 +378,8 @@ export default function DownloadPage() {
                         ></path>
                       </svg>
                       {downloadProgress > 0
-                        ? `Processing... ${downloadProgress}%`
-                        : "Downloading..."}
+                        ? `PROCESSING... ${downloadProgress}%`
+                        : "DOWNLOADING..."}
                     </>
                   ) : (
                     <>
@@ -377,7 +396,7 @@ export default function DownloadPage() {
                           d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                         />
                       </svg>
-                      Download File
+                      [DOWNLOAD_FILE]
                     </>
                   )}
                 </button>
@@ -385,12 +404,9 @@ export default function DownloadPage() {
 
               {/* Error Display */}
               {error && (
-                <div className="mt-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
-                  <p
-                    className="text-red-400 text-sm"
-                    style={{ fontFamily: "Roboto, sans-serif" }}
-                  >
-                    {error}
+                <div className="mt-6 p-4 bg-black border-2 border-red-500 rounded-none">
+                  <p className="text-red-400 text-sm font-mono">
+                    [ERROR]: {error}
                   </p>
                 </div>
               )}

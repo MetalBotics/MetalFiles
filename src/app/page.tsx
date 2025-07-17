@@ -954,22 +954,22 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
-        {/* Parallax Background Elements */}
+      <div className="min-h-screen bg-black relative overflow-hidden">
+        {/* Matrix-style Background Pattern */}
         <div
-          className="absolute inset-0 opacity-20"
+          className="absolute inset-0 opacity-10"
           style={{
             transform: isMounted
               ? `translateY(${scrollY * 0.5}px)`
               : "translateY(0px)",
           }}
         >
-          <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-40 right-20 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-green-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-20 left-10 w-32 h-32 bg-green-500/20 blur-2xl"></div>
+          <div className="absolute top-40 right-20 w-48 h-48 bg-green-400/10 blur-3xl"></div>
+          <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-green-600/15 blur-2xl"></div>
         </div>
 
-        {/* Moving Grid Pattern */}
+        {/* Terminal Grid Pattern */}
         <div
           className="absolute inset-0 opacity-5"
           style={{
@@ -977,10 +977,10 @@ export default function Home() {
               ? `translateY(${scrollY * 0.3}px)`
               : "translateY(0px)",
             backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+              linear-gradient(rgba(0,255,0,0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0,255,0,0.3) 1px, transparent 1px)
             `,
-            backgroundSize: "50px 50px",
+            backgroundSize: "30px 30px",
           }}
         ></div>
 
@@ -995,11 +995,11 @@ export default function Home() {
                 : "translateY(0px)",
             }}
           >
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-              Secure File
-              <span className="text-blue-400"> Transfer</span>
+            <h1 className="text-5xl md:text-6xl font-bold text-green-500 mb-6 leading-tight font-mono tracking-wider terminal-cursor">
+              {">"} SECURE FILE
+              <span className="text-green-400"> TRANSFER_</span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed font-mono">
               Experience lightning-fast, secure file transfers with
               enterprise-grade encryption and real-time monitoring capabilities.
             </p>
@@ -1101,10 +1101,10 @@ export default function Home() {
             }}
           >
             <div
-              className={`relative bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-8 transition-all duration-300 ${
+              className={`relative bg-black border-2 p-8 transition-all duration-300 ${
                 isDragOver
-                  ? "border-blue-500/50 bg-blue-900/20 shadow-2xl shadow-blue-500/10"
-                  : "hover:border-gray-600/50 hover:bg-gray-800/30"
+                  ? "border-green-400 bg-green-900/10 shadow-2xl shadow-green-500/20"
+                  : "border-green-500 hover:border-green-400 hover:bg-green-900/5"
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -1112,19 +1112,17 @@ export default function Home() {
             >
               <div
                 className="text-center"
-                style={{ fontFamily: "Roboto, sans-serif" }}
+                style={{ fontFamily: "Courier New, monospace" }}
               >
                 <div
-                  className="mx-auto h-20 w-20 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center mb-6"
+                  className="mx-auto h-20 w-20 bg-black border-2 border-green-500 flex items-center justify-center mb-6"
                   style={{
-                    transform: `translateY(${
-                      Math.sin(scrollY * 0.01) * 10
-                    }px) rotate(${scrollY * 0.1}deg)`,
+                    transform: `translateY(${Math.sin(scrollY * 0.01) * 5}px)`,
                     transition: "transform 0.1s ease-out",
                   }}
                 >
                   <svg
-                    className="h-10 w-10 text-white"
+                    className="h-10 w-10 text-green-500"
                     stroke="currentColor"
                     fill="none"
                     viewBox="0 0 48 48"
@@ -1138,12 +1136,13 @@ export default function Home() {
                   </svg>
                 </div>
 
-                <h3 className="text-2xl font-semibold text-white mb-3">
-                  Drop files here or click to browse
+                <h3 className="text-2xl font-semibold text-green-500 mb-3 font-mono tracking-wide">
+                  [DRAG FILES HERE] OR [CLICK TO BROWSE]
                 </h3>
-                <p className="text-gray-400 mb-8">
-                  Support for all file types • Up to 10GB per file • End-to-end
-                  encryption
+                <p className="text-green-300 mb-8 font-mono text-sm">
+                  ALL FILE TYPES • MAX: 10GB • ENCRYPTION: AES-256
+                  <br />
+                  STATUS: READY FOR SECURE TRANSMISSION
                 </p>
 
                 <NoSSR fallback={<div className="sr-only"></div>}>
@@ -1161,8 +1160,8 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleButtonClick}
-                  className="inline-flex items-center px-8 py-4 text-lg font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/50 transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
-                  style={{ fontFamily: "Roboto, sans-serif" }}
+                  className="matrix-button inline-flex items-center px-8 py-4 text-lg font-bold text-green-500 bg-black border-2 border-green-500 hover:bg-green-500 hover:text-black focus:outline-none focus:ring-4 focus:ring-green-500/50 transition-all duration-200 shadow-lg hover:shadow-green-500/50 cursor-pointer font-mono tracking-wider"
+                  style={{ fontFamily: "Courier New, monospace" }}
                 >
                   <svg
                     className="w-5 h-5 mr-2"
@@ -1177,7 +1176,7 @@ export default function Home() {
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                     />
                   </svg>
-                  Select Files
+                  [SELECT FILES]
                 </button>
               </div>
             </div>

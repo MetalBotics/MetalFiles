@@ -19,25 +19,35 @@ export default function NotFound() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center px-4">
-        <div className="max-w-2xl mx-auto text-center">
+      <div className="min-h-screen bg-black text-green-500 font-mono flex items-center justify-center px-4">
+        <div 
+          className="absolute inset-0 opacity-5"
+          style={{
+            backgroundImage: `
+              linear-gradient(90deg, #00ff00 1px, transparent 1px),
+              linear-gradient(#00ff00 1px, transparent 1px)
+            `,
+            backgroundSize: '20px 20px'
+          }}
+        />
+        <div className="max-w-2xl mx-auto text-center relative z-10">
           {/* Error Code */}
           <div className="mb-8">
-            <h1 className="text-9xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 mb-4">
+            <h1 className="text-9xl font-bold text-green-500 mb-4 font-mono">
               404
             </h1>
-            <div className="w-32 h-1 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto rounded-full"></div>
+            <div className="w-32 h-1 bg-green-500 mx-auto"></div>
           </div>
 
           {/* Error Message */}
           <div className="mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Page Not Found
+            <h2 className="text-3xl md:text-4xl font-bold text-green-500 mb-4 font-mono">
+              [PAGE_NOT_FOUND]
             </h2>
-            <p className="text-lg text-gray-400 mb-6 leading-relaxed">
-              The page you're looking for doesn't exist or has been moved.
+            <p className="text-lg text-green-400 mb-6 leading-relaxed font-mono">
+              THE PAGE YOU'RE LOOKING FOR DOESN'T EXIST OR HAS BEEN MOVED.
               <br />
-              Let's get you back to uploading files securely.
+              LET'S GET YOU BACK TO UPLOADING FILES SECURELY.
             </p>
           </div>
 
@@ -45,7 +55,7 @@ export default function NotFound() {
           <div className="mb-8">
             <div className="relative inline-block">
               <svg
-                className="w-24 h-24 text-gray-600 animate-pulse"
+                className="w-24 h-24 text-green-400 animate-pulse"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -55,7 +65,7 @@ export default function NotFound() {
                   clipRule="evenodd"
                 />
               </svg>
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 border border-red-400 flex items-center justify-center">
                 <svg
                   className="w-4 h-4 text-white"
                   fill="currentColor"
@@ -75,7 +85,7 @@ export default function NotFound() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/"
-              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+              className="matrix-button px-8 py-4 font-mono"
             >
               <div className="flex items-center justify-center space-x-2">
                 <svg
@@ -83,19 +93,15 @@ export default function NotFound() {
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-                    clipRule="evenodd"
-                  />
+                  <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
                 </svg>
-                <span>Go to Home</span>
+                <span>[RETURN_HOME]</span>
               </div>
             </Link>
 
             <button
               onClick={() => window.history.back()}
-              className="px-8 py-4 border-2 border-gray-600 text-gray-300 font-semibold rounded-xl hover:border-gray-500 hover:text-white transition-all duration-300 transform hover:scale-105"
+              className="px-8 py-4 border-2 border-green-500 text-green-400 font-semibold rounded-none hover:border-green-400 hover:text-green-300 transition-all duration-300 font-mono"
             >
               <div className="flex items-center justify-center space-x-2">
                 <svg
@@ -109,29 +115,29 @@ export default function NotFound() {
                     clipRule="evenodd"
                   />
                 </svg>
-                <span>Go Back</span>
+                <span>[GO_BACK]</span>
               </div>
             </button>
           </div>
 
           {/* Additional Help */}
-          <div className="mt-12 pt-8 border-t border-gray-700">
-            <p className="text-sm text-gray-500 mb-4">
-              Need help? Here are some quick links:
+          <div className="mt-12 pt-8 border-t border-green-500">
+            <p className="text-sm text-green-400 mb-4 font-mono">
+              NEED HELP? HERE ARE SOME QUICK LINKS:
             </p>
-            <div className="flex flex-wrap justify-center gap-6 text-sm">
+            <div className="flex flex-wrap justify-center gap-6 text-sm font-mono">
               <Link
                 href="/"
-                className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
+                className="text-green-500 hover:text-green-300 transition-colors duration-200"
               >
-                File Upload
+                [FILE_UPLOAD]
               </Link>
-              <span className="text-gray-600">•</span>
+              <span className="text-green-600">•</span>
               <a
                 href="mailto:contact@metalbotics.tech"
-                className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
+                className="text-green-500 hover:text-green-300 transition-colors duration-200"
               >
-                Support
+                [SUPPORT]
               </a>
             </div>
           </div>
