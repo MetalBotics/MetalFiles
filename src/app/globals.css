@@ -22,7 +22,7 @@ body {
   letter-spacing: 0.02em;
   opacity: 1 !important;
   visibility: visible !important;
-  color: #00ff00 !important;
+  color: #ffffff !important;
 }
 
 /* Prevent icon flashing - force visibility */
@@ -84,4 +84,5 @@ img[src="/favicon.ico"] {
 .terminal-cursor::after {
   content: '█';
   animation: terminal-blink 1s infinite;
+;
 }

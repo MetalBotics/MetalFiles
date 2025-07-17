@@ -697,10 +697,20 @@ export default function Home() {
         const errorData = await response
           .json()
           .catch(() => ({ error: "Unknown error" }));
-        console.error(
-          "Failed to delete file from server:",
-          errorData.error || response.statusText
-        );
+        const errorMessage = errorData.error || response.statusText;
+
+        // If the token is not found, treat it as already deleted
+        if (
+          errorMessage.includes("Token not found") ||
+          errorMessage.includes("not found") ||
+          response.status === 404
+        ) {
+          console.log("Token not found on server, treating as already deleted");
+          deleteSuccess = true; // Allow removal from UI
+        } else {
+          // Only log as error if it's not an expected "not found" case
+          console.error("Failed to delete file from server:", errorMessage);
+        }
       }
     } catch (error) {
       console.error("Error deleting file from server:", error);
@@ -779,15 +789,29 @@ export default function Home() {
             const errorData = await response
               .json()
               .catch(() => ({ error: "Unknown error" }));
-            console.error(
-              `Failed to delete file with token ${token}:`,
-              errorData.error || response.statusText
-            );
-            return {
-              success: false,
-              token,
-              error: errorData.error || response.statusText,
-            };
+            const errorMessage = errorData.error || response.statusText;
+
+            // If the token is not found, treat it as already deleted
+            if (
+              errorMessage.includes("Token not found") ||
+              errorMessage.includes("not found") ||
+              response.status === 404
+            ) {
+              console.log(
+                `Token ${token} not found on server, treating as already deleted`
+              );
+              return { success: true, token };
+            } else {
+              console.error(
+                `Failed to delete file with token ${token}:`,
+                errorMessage
+              );
+              return {
+                success: false,
+                token,
+                error: errorMessage,
+              };
+            }
           }
         } catch (error) {
           console.error(`Error deleting file with token ${token}:`, error);
@@ -995,11 +1019,11 @@ export default function Home() {
                 : "translateY(0px)",
             }}
           >
-            <h1 className="text-5xl md:text-6xl font-bold text-green-500 mb-6 leading-tight font-mono tracking-wider terminal-cursor">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight tracking-wider terminal-cursor">
               {">"} SECURE FILE
               <span className="text-green-400"> TRANSFER_</span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed font-mono">
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Experience lightning-fast, secure file transfers with
               enterprise-grade encryption and real-time monitoring capabilities.
             </p>
@@ -1112,7 +1136,7 @@ export default function Home() {
             >
               <div
                 className="text-center"
-                style={{ fontFamily: "Courier New, monospace" }}
+                style={{ fontFamily: "Roboto, sans-serif" }}
               >
                 <div
                   className="mx-auto h-20 w-20 bg-black border-2 border-green-500 flex items-center justify-center mb-6"
@@ -1136,10 +1160,10 @@ export default function Home() {
                   </svg>
                 </div>
 
-                <h3 className="text-2xl font-semibold text-green-500 mb-3 font-mono tracking-wide">
-                  [DRAG FILES HERE] OR [CLICK TO BROWSE]
+                <h3 className="text-2xl font-semibold text-white mb-3 tracking-wide">
+                  [DRAG FILES HERE]
                 </h3>
-                <p className="text-green-300 mb-8 font-mono text-sm">
+                <p className="text-gray-300 mb-8 text-sm">
                   ALL FILE TYPES • MAX: 10GB • ENCRYPTION: AES-256
                   <br />
                   STATUS: READY FOR SECURE TRANSMISSION
@@ -1160,8 +1184,8 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleButtonClick}
-                  className="matrix-button inline-flex items-center px-8 py-4 text-lg font-bold text-green-500 bg-black border-2 border-green-500 hover:bg-green-500 hover:text-black focus:outline-none focus:ring-4 focus:ring-green-500/50 transition-all duration-200 shadow-lg hover:shadow-green-500/50 cursor-pointer font-mono tracking-wider"
-                  style={{ fontFamily: "Courier New, monospace" }}
+                  className="matrix-button inline-flex items-center px-8 py-4 text-lg font-bold text-white bg-black border-2 border-white hover:bg-white hover:text-black focus:outline-none focus:ring-4 focus:ring-white/50 transition-all duration-200 shadow-lg hover:shadow-white/50 cursor-pointer tracking-wider"
+                  style={{ fontFamily: "Roboto, sans-serif" }}
                 >
                   <svg
                     className="w-5 h-5 mr-2"
@@ -1176,7 +1200,7 @@ export default function Home() {
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                     />
                   </svg>
-                  [SELECT FILES]
+                  SELECT FILES
                 </button>
               </div>
             </div>
@@ -1195,13 +1219,13 @@ export default function Home() {
                 zIndex: 15,
               }}
             >
-              <div className="bg-gray-900/50 backdrop-blur-xl rounded-2xl border border-gray-700/50 p-6">
+              <div className="bg-black border-2 border-green-400/30 p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-semibold text-white">
-                    Selected Files ({selectedFiles.length})
+                    SELECTED FILES ({selectedFiles.length})
                   </h3>
                   <div className="text-sm text-gray-400">
-                    Total:{" "}
+                    TOTAL:{" "}
                     {formatFileSize(
                       selectedFiles.reduce((acc, file) => acc + file.size, 0)
                     )}
@@ -1217,18 +1241,18 @@ export default function Home() {
                     return (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-4 bg-gray-800/50 rounded-xl border border-gray-700/30 hover:bg-gray-700/50 transition-colors duration-200"
+                        className="flex items-center justify-between p-4 bg-black border border-gray-500 hover:border-gray-300 transition-colors duration-200"
                       >
                         <div className="flex items-center flex-1">
                           <div
-                            className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${
+                            className={`flex-shrink-0 w-12 h-12 border-2 flex items-center justify-center ${
                               status === "success"
-                                ? "bg-green-500"
+                                ? "bg-green-500 border-green-400"
                                 : status === "error"
-                                ? "bg-red-500"
+                                ? "bg-red-500 border-red-400"
                                 : status === "uploading"
-                                ? "bg-yellow-500"
-                                : "bg-gradient-to-r from-blue-500 to-purple-600"
+                                ? "bg-yellow-500 border-yellow-400"
+                                : "bg-black border-white"
                             }`}
                           >
                             {status === "success" ? (
@@ -1301,39 +1325,20 @@ export default function Home() {
                               >
                                 {file.name}
                               </p>
-                              <span
-                                className={`text-xs px-2 py-1 rounded-full ${
-                                  status === "success"
-                                    ? "bg-green-500/20 text-green-400"
-                                    : status === "error"
-                                    ? "bg-red-500/20 text-red-400"
-                                    : status === "uploading"
-                                    ? "bg-yellow-500/20 text-yellow-400"
-                                    : "bg-gray-500/20 text-gray-400"
-                                }`}
-                              >
-                                {status === "success"
-                                  ? "Uploaded"
-                                  : status === "error"
-                                  ? "Failed"
-                                  : status === "uploading"
-                                  ? `${Math.round(progress)}%`
-                                  : "Pending"}
-                              </span>
                             </div>
                             <div className="flex items-center justify-between">
                               <p className="text-sm text-gray-400">
                                 {formatFileSize(file.size)}
                                 {chunkedFiles[fileKey] && (
-                                  <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">
-                                    Chunked Upload
+                                  <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 px-2 py-1 border border-blue-500">
+                                    CHUNKED UPLOAD
                                   </span>
                                 )}
                               </p>
                               {status === "uploading" && (
-                                <div className="w-32 bg-gray-700 rounded-full h-2 ml-4">
+                                <div className="w-32 bg-gray-700 border border-gray-500 h-2 ml-4">
                                   <div
-                                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                    className="bg-green-400 h-2 transition-all duration-300"
                                     style={{
                                       width: `${Math.round(progress)}%`,
                                     }}
@@ -1343,20 +1348,42 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
+                        <span
+                          className={`text-xs px-2 py-1 border ml-4 ${
+                            status === "success"
+                              ? "bg-green-500/20 text-green-400 border-green-500"
+                              : status === "error"
+                              ? "bg-red-500/20 text-red-400 border-red-500"
+                              : status === "uploading"
+                              ? "bg-yellow-500/20 text-yellow-400 border-yellow-500"
+                              : "bg-gray-500/20 text-gray-400 border-gray-500"
+                          }`}
+                        >
+                          {status === "success"
+                            ? "Uploaded"
+                            : status === "error"
+                            ? "Failed"
+                            : status === "uploading"
+                            ? `${Math.round(progress)}%`
+                            : "Pending"}
+                        </span>
                         {status !== "uploading" && (
                           <button
                             onClick={() => removeFile(index)}
-                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all duration-200 ml-4"
+                            className="flex items-center justify-center w-10 h-10 bg-black border border-red-500 hover:bg-red-500 hover:text-black text-red-400 transition-colors duration-200 cursor-pointer ml-4"
+                            title="Remove from list"
                           >
                             <svg
-                              className="w-5 h-5"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
                               <path
-                                fillRule="evenodd"
-                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                clipRule="evenodd"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
                               />
                             </svg>
                           </button>
@@ -1375,11 +1402,11 @@ export default function Home() {
                       selectedFiles.length === 0 ||
                       !FileEncryption.isCryptoAvailable()
                     }
-                    className={`flex-1 ${
+                    className={`cursor-pointer flex-1 matrix-button ${
                       isUploading || !FileEncryption.isCryptoAvailable()
-                        ? "bg-gray-600 cursor-not-allowed"
-                        : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                    } text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl`}
+                        ? "bg-gray-600 border-gray-500 cursor-not-allowed text-gray-400"
+                        : "bg-black border-white text-white hover:bg-white hover:text-black"
+                    } font-medium py-3 px-6 border-2 transition-all duration-200`}
                     style={{ fontFamily: "Roboto, sans-serif" }}
                   >
                     <div className="flex items-center justify-center">
@@ -1405,7 +1432,7 @@ export default function Home() {
                               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                             ></path>
                           </svg>
-                          Uploading...
+                          UPLOADING...
                         </>
                       ) : (
                         <>
@@ -1422,7 +1449,7 @@ export default function Home() {
                               d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 12l2 2 4-4"
                             />
                           </svg>
-                          Upload Files
+                          UPLOAD FILES
                         </>
                       )}
                     </div>
@@ -1439,10 +1466,10 @@ export default function Home() {
                         console.log("File input cleared");
                       }
                     }}
-                    className="px-6 py-3 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-500 rounded-xl transition-colors duration-200"
+                    className="cursor-pointer matrix-button px-6 py-3 border-2 border-gray-500 text-gray-400 hover:text-white hover:border-white transition-all duration-200"
                     style={{ fontFamily: "Roboto, sans-serif" }}
                   >
-                    Clear All
+                    CLEAR ALL
                   </button>
                 </div>
               </div>
@@ -1461,18 +1488,18 @@ export default function Home() {
                 zIndex: 10,
               }}
             >
-              <div className="bg-gray-900/40 backdrop-blur-sm rounded-2xl border border-gray-700/40 p-8">
+              <div className="bg-black border-2 border-green-400/20 p-8">
                 <h2
                   className="text-2xl font-bold text-white mb-6 text-center"
-                  style={{ fontFamily: "Orbitron, monospace" }}
+                  style={{ fontFamily: "Roboto, sans-serif" }}
                 >
-                  Download Links
+                  DOWNLOAD LINKS
                 </h2>
                 <div className="space-y-4">
                   {downloadUrls.map((item) => (
                     <div
                       key={`download-${item.id}-${item.downloadUrl}`}
-                      className="bg-gray-800/50 rounded-xl border border-gray-700/30 p-4 hover:border-blue-500/50 transition-colors duration-300"
+                      className="bg-black border border-gray-500 p-4 hover:border-gray-300 transition-colors duration-300"
                     >
                       <div className="flex items-center justify-between flex-wrap gap-4">
                         <div className="flex-1 min-w-0">
@@ -1569,11 +1596,11 @@ export default function Home() {
                             onClick={() =>
                               copyToClipboard(item.downloadUrl, item.id)
                             }
-                            className={`flex items-center gap-2 px-4 py-2 ${
+                            className={`matrix-button flex items-center gap-2 px-4 py-2 ${
                               copiedId === item.id
-                                ? "bg-green-600 hover:bg-green-700"
-                                : "bg-blue-600 hover:bg-blue-700"
-                            } text-white rounded-lg transition-colors duration-200 text-sm cursor-pointer`}
+                                ? "bg-green-600 hover:bg-green-700 text-white"
+                                : "bg-black border-2 border-white hover:bg-white hover:text-black text-white"
+                            } transition-all duration-200 text-sm cursor-pointer`}
                             style={{ fontFamily: "Roboto, sans-serif" }}
                           >
                             <svg
@@ -1598,12 +1625,12 @@ export default function Home() {
                                 />
                               )}
                             </svg>
-                            {copiedId === item.id ? "Copied!" : "Copy Link"}
+                            {copiedId === item.id ? "COPIED!" : "COPY LINK"}
                           </button>
                           <button
                             onClick={() => removeDownloadUrl(item.id)}
                             disabled={deletingIds.has(item.id)}
-                            className="flex items-center justify-center w-10 h-10 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-lg transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center justify-center w-10 h-10 bg-black border border-red-500 hover:bg-red-500 hover:text-black text-red-400 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Remove from list"
                           >
                             {deletingIds.has(item.id) ? (
@@ -1647,18 +1674,17 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-6 pt-4 border-t border-gray-700/30">
+                <div className="mt-6 pt-4 border-t border-white">
                   <p
                     className="text-gray-400 text-sm text-center"
                     style={{ fontFamily: "Roboto, sans-serif" }}
                   >
-                    Download links are valid for 24 hours. Share them securely
-                    with intended recipients.
+                    Download links valid for 24 hours • Share securely
                   </p>
                   <div className="flex gap-3 justify-center mt-3">
                     <button
                       onClick={validateAllDownloadLinks}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-700/50 hover:bg-blue-700 text-blue-300 hover:text-white rounded-lg transition-colors duration-200 text-sm"
+                      className="cursor-pointer matrix-button flex items-center gap-2 px-4 py-2 bg-black border-2 border-white text-white hover:bg-white hover:text-black transition-all duration-300 text-sm"
                       style={{ fontFamily: "Roboto, sans-serif" }}
                     >
                       <svg
@@ -1674,12 +1700,12 @@ export default function Home() {
                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                         />
                       </svg>
-                      Refresh Status
+                      REFRESH STATUS
                     </button>
                     <button
                       onClick={clearAllDownloadUrls}
                       disabled={isClearing}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-700/50 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-colors duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="cursor-pointer matrix-button flex items-center gap-2 px-4 py-2 bg-black border-2 border-white text-white hover:bg-white hover:text-black transition-all duration-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black disabled:hover:text-white"
                       style={{ fontFamily: "Roboto, sans-serif" }}
                     >
                       {isClearing && (
@@ -1703,7 +1729,7 @@ export default function Home() {
                           ></path>
                         </svg>
                       )}
-                      {isClearing ? "Clearing..." : "Clear All Links"}
+                      {isClearing ? "CLEARING..." : "CLEAR ALL LINKS"}
                     </button>
                   </div>
                 </div>
@@ -1713,13 +1739,13 @@ export default function Home() {
 
           {/* Section Separator */}
           <div className="mt-24 mb-16 flex items-center justify-center">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent"></div>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-500/50 to-transparent"></div>
             <div className="mx-8 flex items-center space-x-2">
-              <div className="w-2 h-2 rounded-full bg-blue-400/60"></div>
-              <div className="w-2 h-2 rounded-full bg-green-400/60"></div>
-              <div className="w-2 h-2 rounded-full bg-purple-400/60"></div>
+              <div className="w-2 h-2 bg-white/60"></div>
+              <div className="w-2 h-2 bg-gray-400/60"></div>
+              <div className="w-2 h-2 bg-green-400/60"></div>
             </div>
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-600/50 to-transparent"></div>
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-500/50 to-transparent"></div>
           </div>
 
           {/* Features Section */}
@@ -1732,16 +1758,9 @@ export default function Home() {
                 : "translateY(0px)",
             }}
           >
-            <div
-              className="text-center p-6 bg-gray-900/30 backdrop-blur-sm rounded-xl border border-gray-700/30"
-              style={{
-                transform: isMounted
-                  ? `translateY(${scrollY * 0.01}px)`
-                  : "translateY(0px)",
-              }}
-            >
+            <div className="text-center p-6 bg-black border border-green-400">
               <div
-                className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-4"
+                className="w-12 h-12 bg-white/20 border border-green-200 flex items-center justify-center mx-auto mb-4"
                 style={{
                   transform: isMounted
                     ? `translateY(${Math.sin(scrollY * 0.005) * 5}px)`
@@ -1749,7 +1768,7 @@ export default function Home() {
                 }}
               >
                 <svg
-                  className="w-6 h-6 text-blue-400"
+                  className="w-6 h-6 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1763,7 +1782,7 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
-                Secure Transfer
+                SECURE TRANSFER
               </h3>
               <p className="text-gray-400 text-sm">
                 End-to-end encryption ensures your files are protected during
@@ -1771,16 +1790,9 @@ export default function Home() {
               </p>
             </div>
 
-            <div
-              className="text-center p-6 bg-gray-900/30 backdrop-blur-sm rounded-xl border border-gray-700/30"
-              style={{
-                transform: isMounted
-                  ? `translateY(${scrollY * 0.015}px)`
-                  : "translateY(0px)",
-              }}
-            >
+            <div className="text-center p-6 bg-black border border-green-400">
               <div
-                className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-4"
+                className="w-12 h-12 bg-white/20 border border-green-200 flex items-center justify-center mx-auto mb-4"
                 style={{
                   transform: isMounted
                     ? `translateY(${Math.sin(scrollY * 0.007) * 5}px)`
@@ -1788,7 +1800,7 @@ export default function Home() {
                 }}
               >
                 <svg
-                  className="w-6 h-6 text-green-400"
+                  className="w-6 h-6 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1802,24 +1814,17 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
-                Lightning Fast
+                LIGHTNING FAST
               </h3>
               <p className="text-gray-400 text-sm">
-                Optimized transfer speeds with no file compression, so the
-                quality is preserved
+                Optimized transfer speeds with no file compression, quality is
+                preserved
               </p>
             </div>
 
-            <div
-              className="text-center p-6 bg-gray-900/30 backdrop-blur-sm rounded-xl border border-gray-700/30"
-              style={{
-                transform: isMounted
-                  ? `translateY(${scrollY * 0.008}px)`
-                  : "translateY(0px)",
-              }}
-            >
+            <div className="text-center p-6 bg-black border border-green-400">
               <div
-                className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-4"
+                className="w-12 h-12 bg-white/20 border border-green-200 flex items-center justify-center mx-auto mb-4"
                 style={{
                   transform: isMounted
                     ? `translateY(${Math.sin(scrollY * 0.009) * 5}px)`
@@ -1827,7 +1832,7 @@ export default function Home() {
                 }}
               >
                 <svg
-                  className="w-6 h-6 text-purple-400"
+                  className="w-6 h-6 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1841,15 +1846,15 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-white mb-2">
-                Reliable
+                RELIABLE
               </h3>
               <p className="text-gray-400 text-sm">
-                99.9% uptime with automatic retry and error recovery
+                99.9% Uptime with CDN support for global reach
               </p>
             </div>
           </div>
         </div>
-        <hr className="mt-16 border-t border-gray-800"></hr>
+        <hr className="mt-16 border-t border-green-400/50"></hr>
       </div>
 
       {/* API Usage Section */}
@@ -1857,20 +1862,20 @@ export default function Home() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Command Line Access
+              COMMAND LINE ACCESS
             </h2>
             <p className="text-gray-400 text-lg">
-              Download files programmatically using wget or curl
+              Download files programmatically using WGET or CURL
             </p>
           </div>
 
-          <div className="bg-gray-900/40 backdrop-blur-sm rounded-xl border border-gray-700/30 p-8">
+          <div className="bg-black border-2 border-white p-8">
             <div className="grid md:grid-cols-2 gap-8">
               {/* wget Instructions */}
               <div>
                 <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
                   <svg
-                    className="w-5 h-5 text-green-400 mr-2"
+                    className="w-5 h-5 text-gray-400 mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1882,19 +1887,21 @@ export default function Home() {
                       d="M8 9l3 3-3 3m5 0h3"
                     />
                   </svg>
-                  Using wget
+                  USING WGET
                 </h3>
-                <div className="bg-black/50 rounded-lg p-4 mb-4">
+                <div className="bg-gray-900 border border-green-300/80 p-4 mb-4">
                   <code className="text-green-400 text-sm block break-all">
                     wget --content-disposition
                     "https://metalfiles.tech/api/download/[token]"
                   </code>
                 </div>
                 <p className="text-gray-400 text-sm">
-                  Replace <span className="text-blue-400">[token]</span> with
-                  your download token. The{" "}
-                  <span className="text-green-400">--content-disposition</span>{" "}
-                  flag ensures the original filename is preserved.
+                  Replace <span className="text-white">[TOKEN]</span> with your
+                  download token <br />
+                  The <span className="text-white">
+                    --CONTENT-DISPOSITION
+                  </span>{" "}
+                  flag ensures the original file name is preserved.
                 </p>
               </div>
 
@@ -1902,7 +1909,7 @@ export default function Home() {
               <div>
                 <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
                   <svg
-                    className="w-5 h-5 text-blue-400 mr-2"
+                    className="w-5 h-5 text-gray-400 mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1914,23 +1921,23 @@ export default function Home() {
                       d="M8 9l3 3-3 3m5 0h3"
                     />
                   </svg>
-                  Using curl
+                  USING CURL
                 </h3>
-                <div className="bg-black/50 rounded-lg p-4 mb-4">
-                  <code className="text-blue-400 text-sm block break-all">
+                <div className="bg-gray-900 border border-green-300/80 p-4 mb-4">
+                  <code className="text-green-400 text-sm block break-all">
                     curl -OJ "https://metalfiles.tech/api/download/[token]"
                   </code>
                 </div>
                 <p className="text-gray-400 text-sm">
-                  The <span className="text-blue-400">-OJ</span> flags save the
-                  file with its original name and follow redirects.
+                  The <span className="text-white">-OJ</span> flag save the file
+                  with its original name and follow redirects.
                 </p>
               </div>
             </div>
 
             {/* Important Notes */}
-            <div className="mt-8 p-6 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <h4 className="text-yellow-400 font-semibold mb-2 flex items-center">
+            <div className="mt-8 p-6 bg-red-900/20 border border-red-500">
+              <h4 className="text-red-400 font-semibold mb-2 flex items-center font-mono">
                 <svg
                   className="w-5 h-5 mr-2"
                   fill="none"
@@ -1944,13 +1951,13 @@ export default function Home() {
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"
                   />
                 </svg>
-                Important Notes
+                IMPORTANT NOTES
               </h4>
               <ul className="text-gray-300 text-sm space-y-1">
                 <li>
                   • Download links are{" "}
-                  <span className="text-red-400">one-time use only</span> - they
-                  become invalid after downloading
+                  <span className="text-red-400">ONE-TIME USE ONLY</span> - they
+                  become invalid after the first download.
                 </li>
                 <li>• Files are automatically decrypted during download</li>
                 <li>• Links expire after 24 hours if not used</li>

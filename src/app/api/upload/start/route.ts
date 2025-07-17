@@ -3,6 +3,8 @@ import UploadSessionManager from '../../uploadSessionManager';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== START UPLOAD SESSION REQUEST ===');
+    const requestData = await request.json();
     const {
       originalName,
       originalSize,
@@ -12,10 +14,22 @@ export async function POST(request: NextRequest) {
       iv,
       salt,
       metadataIv
-    } = await request.json();
+    } = requestData;
+
+    console.log('Session start request:', {
+      originalName,
+      originalSize,
+      totalSize,
+      totalChunks,
+      hasEncryptionKey: !!encryptionKey,
+      hasIv: !!iv,
+      hasSalt: !!salt,
+      hasMetadataIv: !!metadataIv
+    });
 
     // Validate required fields
     if (!originalName || !originalSize || !totalSize || !totalChunks || !encryptionKey || !iv || !salt || !metadataIv) {
+      console.error('Missing required fields in session start');
       return NextResponse.json({
         success: false,
         error: 'Missing required fields'
@@ -23,6 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionManager = UploadSessionManager.getInstance();
+    console.log('Creating session...');
     
     const uploadId = sessionManager.createSession({
       originalName,
@@ -34,6 +49,12 @@ export async function POST(request: NextRequest) {
       salt,
       metadataIv
     });
+
+    console.log('Session created successfully:', uploadId);
+    
+    // Debug: Verify session was created
+    const verifySession = sessionManager.getSession(uploadId);
+    console.log('Session verification:', !!verifySession);
 
     return NextResponse.json({
       success: true,

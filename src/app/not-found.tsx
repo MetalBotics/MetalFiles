@@ -19,35 +19,48 @@ export default function NotFound() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-black text-green-500 font-mono flex items-center justify-center px-4">
-        <div 
+      <div
+        className="min-h-screen bg-black text-white flex items-center justify-center px-4"
+        style={{ fontFamily: "Roboto, sans-serif" }}
+      >
+        {/* Terminal Grid Pattern */}
+        <div
           className="absolute inset-0 opacity-5"
           style={{
             backgroundImage: `
-              linear-gradient(90deg, #00ff00 1px, transparent 1px),
-              linear-gradient(#00ff00 1px, transparent 1px)
+              linear-gradient(rgba(0,255,0,0.3) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0,255,0,0.3) 1px, transparent 1px)
             `,
-            backgroundSize: '20px 20px'
+            backgroundSize: "30px 30px",
           }}
         />
         <div className="max-w-2xl mx-auto text-center relative z-10">
           {/* Error Code */}
           <div className="mb-8">
-            <h1 className="text-9xl font-bold text-green-500 mb-4 font-mono">
+            <h1
+              className="text-7xl md:text-9xl font-bold text-white mb-4"
+              style={{ fontFamily: "Roboto, sans-serif" }}
+            >
               404
             </h1>
-            <div className="w-32 h-1 bg-green-500 mx-auto"></div>
+            <div className="w-32 h-1 bg-white mx-auto"></div>
           </div>
 
           {/* Error Message */}
           <div className="mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-green-500 mb-4 font-mono">
-              [PAGE_NOT_FOUND]
+            <h2
+              className="text-3xl md:text-4xl font-bold text-white mb-4"
+              style={{ fontFamily: "Roboto, sans-serif" }}
+            >
+              Page not found
             </h2>
-            <p className="text-lg text-green-400 mb-6 leading-relaxed font-mono">
-              THE PAGE YOU'RE LOOKING FOR DOESN'T EXIST OR HAS BEEN MOVED.
+            <p
+              className="text-lg text-gray-400 mb-6 leading-relaxed"
+              style={{ fontFamily: "Roboto, sans-serif" }}
+            >
+              The page you're looking for doesn't exist or has been moved.
               <br />
-              LET'S GET YOU BACK TO UPLOADING FILES SECURELY.
+              Let's get you back to uploading files securely.
             </p>
           </div>
 
@@ -55,7 +68,7 @@ export default function NotFound() {
           <div className="mb-8">
             <div className="relative inline-block">
               <svg
-                className="w-24 h-24 text-green-400 animate-pulse"
+                className="w-24 h-24 text-gray-400 animate-pulse"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -85,7 +98,8 @@ export default function NotFound() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/"
-              className="matrix-button px-8 py-4 font-mono"
+              className="matrix-button px-8 py-4 bg-black border-2 border-white text-white hover:bg-white hover:text-black transition-all duration-300"
+              style={{ fontFamily: "Roboto, sans-serif" }}
             >
               <div className="flex items-center justify-center space-x-2">
                 <svg
@@ -95,13 +109,14 @@ export default function NotFound() {
                 >
                   <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
                 </svg>
-                <span>[RETURN_HOME]</span>
+                <span>Return home</span>
               </div>
             </Link>
 
             <button
               onClick={() => window.history.back()}
-              className="px-8 py-4 border-2 border-green-500 text-green-400 font-semibold rounded-none hover:border-green-400 hover:text-green-300 transition-all duration-300 font-mono"
+              className="cursor-pointer px-8 py-4 border-2 border-gray-500 text-gray-400 font-semibold hover:border-white hover:text-white transition-all duration-300"
+              style={{ fontFamily: "Roboto, sans-serif" }}
             >
               <div className="flex items-center justify-center space-x-2">
                 <svg
@@ -115,27 +130,33 @@ export default function NotFound() {
                     clipRule="evenodd"
                   />
                 </svg>
-                <span>[GO_BACK]</span>
+                <span>Go back</span>
               </div>
             </button>
           </div>
 
           {/* Additional Help */}
-          <div className="mt-12 pt-8 border-t border-green-500">
-            <p className="text-sm text-green-400 mb-4 font-mono">
-              NEED HELP? HERE ARE SOME QUICK LINKS:
+          <div className="mt-12 pt-8 border-t border-white">
+            <p
+              className="text-sm text-gray-400 mb-4"
+              style={{ fontFamily: "Roboto, sans-serif" }}
+            >
+              Need help? Here are some quick links:
             </p>
-            <div className="flex flex-wrap justify-center gap-6 text-sm font-mono">
+            <div
+              className="flex flex-wrap justify-center gap-6 text-sm"
+              style={{ fontFamily: "Roboto, sans-serif" }}
+            >
               <Link
                 href="/"
-                className="text-green-500 hover:text-green-300 transition-colors duration-200"
+                className="text-white hover:text-green-400 transition-colors duration-200"
               >
-                [FILE_UPLOAD]
+                [FILE UPLOAD]
               </Link>
-              <span className="text-green-600">•</span>
+              <span className="text-gray-600">•</span>
               <a
                 href="mailto:contact@metalbotics.tech"
-                className="text-green-500 hover:text-green-300 transition-colors duration-200"
+                className="text-white hover:text-green-400 transition-colors duration-200"
               >
                 [SUPPORT]
               </a>
