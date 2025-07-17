@@ -18,9 +18,9 @@ export class ChunkedUpload {
     const encryptedBuffer = new Uint8Array(encryptedData);
     const totalSize = encryptedBuffer.length;
     const totalChunks = Math.ceil(totalSize / this.CHUNK_SIZE);
-    
-    console.log(`Starting chunked upload: ${totalChunks} chunks, ${this.formatSize(totalSize)} total`);
 
+    console.log(`Starting chunked upload: ${totalChunks} chunks, ${this.formatSize(totalSize)} total`);    
+    
     // Start upload session
     const sessionResponse = await fetch('/api/upload/start', {
       method: 'POST',
@@ -95,7 +95,9 @@ export class ChunkedUpload {
 
       if (!response.ok) {
         throw new Error(`Chunk upload failed: ${response.status}`);
-      }      // Update progress
+      }
+
+      // Update progress
       if (onProgress) {
         const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
         onProgress(progress);

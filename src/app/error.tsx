@@ -14,12 +14,22 @@ export default function Error({ error, reset }: ErrorPageProps) {
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center px-4">
-      <div className="max-w-2xl mx-auto text-center">
+    <div className="min-h-screen bg-black text-green-500 font-mono flex items-center justify-center px-4">
+      <div
+        className="absolute inset-0 opacity-5"
+        style={{
+          backgroundImage: `
+            linear-gradient(90deg, #00ff00 1px, transparent 1px),
+            linear-gradient(#00ff00 1px, transparent 1px)
+          `,
+          backgroundSize: "20px 20px",
+        }}
+      />
+      <div className="max-w-2xl mx-auto text-center relative z-10">
         {/* Error Icon */}
         <div className="mb-8">
           <div className="relative inline-block">
-            <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+            <div className="w-24 h-24 bg-black border-2 border-red-500 flex items-center justify-center mb-4">
               <svg
                 className="w-12 h-12 text-red-500"
                 fill="currentColor"
@@ -33,25 +43,27 @@ export default function Error({ error, reset }: ErrorPageProps) {
               </svg>
             </div>
           </div>
-          <div className="w-32 h-1 bg-gradient-to-r from-red-500 to-orange-500 mx-auto rounded-full"></div>
+          <div className="w-32 h-1 bg-red-500 mx-auto"></div>
         </div>
 
         {/* Error Message */}
         <div className="mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Something went wrong!
+          <h1 className="text-4xl md:text-5xl font-bold text-red-500 mb-4 font-mono">
+            SYSTEM ERROR
           </h1>
-          <p className="text-lg text-gray-400 mb-6 leading-relaxed">
-            We encountered an unexpected error while processing your request.
+          <p className="text-lg text-red-400 mb-6 leading-relaxed font-mono">
+            UNEXPECTED ERROR WHILE PROCESSING REQUEST.
             <br />
-            Don't worry, your files are safe.
+            DON'T WORRY, YOUR FILES ARE SAFE.
           </p>
-          
+
           {/* Error Details (only in development) */}
           {process.env.NODE_ENV === "development" && error.message && (
-            <div className="mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-lg text-left">
-              <h3 className="text-red-400 font-semibold mb-2">Error Details:</h3>
-              <code className="text-sm text-red-300 break-all">
+            <div className="mb-6 p-4 bg-black border-2 border-red-500 rounded-none text-left">
+              <h3 className="text-red-400 font-semibold mb-2 font-mono">
+                ERROR DETAILS:
+              </h3>
+              <code className="text-sm text-red-300 break-all font-mono">
                 {error.message}
               </code>
             </div>
@@ -60,74 +72,63 @@ export default function Error({ error, reset }: ErrorPageProps) {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-          <button
-            onClick={reset}
-            className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
-          >
+          <button onClick={reset} className="matrix-button px-8 py-4 font-mono">
             <div className="flex items-center justify-center space-x-2">
-              <svg
-                className="w-5 h-5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
                   clipRule="evenodd"
                 />
               </svg>
-              <span>Try Again</span>
+              <span>TRY AGAIN</span>
             </div>
           </button>
 
           <button
-            onClick={() => window.location.href = "/"}
-            className="px-8 py-4 border-2 border-gray-600 text-gray-300 font-semibold rounded-xl hover:border-gray-500 hover:text-white transition-all duration-300 transform hover:scale-105"
+            onClick={() => (window.location.href = "/")}
+            className="px-8 py-4 border-2 border-green-500 text-green-400 font-semibold rounded-none hover:border-green-400 hover:text-green-300 transition-all duration-300 font-mono"
           >
             <div className="flex items-center justify-center space-x-2">
-              <svg
-                className="w-5 h-5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
               </svg>
-              <span>Go Home</span>
+              <span>RETURN HOME</span>
             </div>
           </button>
         </div>
 
         {/* Help Information */}
-        <div className="mt-8 pt-6 border-t border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            What can you do?
+        <div className="mt-8 pt-6 border-t border-green-500">
+          <h3 className="text-lg font-semibold text-green-500 mb-4 font-mono">
+            TROUBLESHOOTING OPTIONS
           </h3>
-          <div className="grid md:grid-cols-3 gap-4 text-sm text-gray-400">
+          <div className="grid md:grid-cols-3 gap-4 text-sm text-green-400 font-mono">
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-blue-400 text-xs font-bold">1</span>
+              <div className="w-6 h-6 bg-black border border-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-green-400 text-xs font-bold">1</span>
               </div>
               <div>
-                <p className="font-medium text-gray-300">Refresh the page</p>
-                <p>Sometimes a simple refresh solves the issue</p>
+                <p className="font-medium text-green-300">REFRESH PAGE</p>
+                <p>SOMETIMES A SIMPLE REFRESH SOLVES THE ISSUE</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-purple-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <span className="text-purple-400 text-xs font-bold">2</span>
+              <div className="w-6 h-6 bg-black border border-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-green-400 text-xs font-bold">2</span>
               </div>
               <div>
-                <p className="font-medium text-gray-300">Check your connection</p>
-                <p>Ensure you have a stable internet connection</p>
+                <p className="font-medium text-green-300">CHECK CONNECTION</p>
+                <p>ENSURE YOU HAVE A STABLE INTERNET CONNECTION</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
-              <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 bg-black border border-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <span className="text-green-400 text-xs font-bold">3</span>
               </div>
               <div>
-                <p className="font-medium text-gray-300">Contact support</p>
-                <p>If the issue persists, let us know</p>
+                <p className="font-medium text-green-300">CONTACT SUPPORT</p>
+                <p>IF THE ISSUE PERSISTS, LET US KNOW</p>
               </div>
             </div>
           </div>
@@ -135,14 +136,14 @@ export default function Error({ error, reset }: ErrorPageProps) {
 
         {/* Contact Info */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500 mb-2">
-            Still having trouble?
+          <p className="text-sm text-green-400 mb-2 font-mono">
+            STILL HAVING TROUBLE?
           </p>
           <a
-            href="mailto:support@metalfiles.tech"
-            className="text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm"
+            href="mailto:contact@metalbotics.tech"
+            className="text-green-500 hover:text-green-300 transition-colors duration-200 text-sm font-mono"
           >
-            Contact Support →
+            [CONTACT SUPPORT →
           </a>
         </div>
       </div>
