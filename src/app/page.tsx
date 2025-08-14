@@ -115,14 +115,7 @@ export default function Home() {
   useEffect(() => {
     setIsMounted(true);
 
-    // Force HTTPS in production
-    if (
-      process.env.NODE_ENV === "production" &&
-      window.location.protocol !== "https:"
-    ) {
-      window.location.replace(window.location.href.replace("http:", "https:"));
-      return;
-    }
+    // Removido: redirecionamento automático para HTTPS
 
     // Check crypto availability on mount
     if (!FileEncryption.isCryptoAvailable()) {

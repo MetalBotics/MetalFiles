@@ -20,7 +20,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/FileTransfer
+            cd ~/filetransfer
             git pull origin main
             npm install
             npm run build

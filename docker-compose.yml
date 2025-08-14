@@ -1,0 +1,32 @@
+version: '3.8'
+services:
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - PORT=28126
+    expose:
+      - "28126"
+    ports:
+      - "28126:28126"
+    networks:
+      - appnet
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - nextjs
+    networks:
+      - appnet
+
+networks:
+  appnet:
+    driver: bridge
