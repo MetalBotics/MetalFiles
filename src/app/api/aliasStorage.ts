@@ -75,8 +75,29 @@ export const aliases = {
   entries: async () => {
     await ensureAliasesLoaded();
     return aliasCache.entries();
+  },
+  // Returns a plain array of [alias, token] for safe iteration
+  entriesArray: async () => {
+    await ensureAliasesLoaded();
+    return Array.from(aliasCache.entries());
   }
 };
+
+// Remove aliases that point to tokens not present in the provided tokenSet
+export async function sweepInvalidAliases(tokenSet: Set<string>) {
+  await ensureAliasesLoaded();
+  let removed = 0;
+  for (const [alias, mappedToken] of Array.from(aliasCache.entries())) {
+    if (!tokenSet.has(mappedToken)) {
+      aliasCache.delete(alias);
+      removed++;
+    }
+  }
+  if (removed > 0) {
+    await saveAliases();
+  }
+  return removed;
+}
 
 export function normalizeAlias(input: string): string {
   return input.trim().toLowerCase();

@@ -2,7 +2,7 @@
 import { writeFile, readFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
-import { aliases } from './aliasStorage';
+import { aliases, sweepInvalidAliases } from './aliasStorage';
 
 export interface TokenData {
   filename: string;
@@ -82,7 +82,22 @@ export const downloadTokens = {
   delete: async (key: string) => {
     await ensureTokensLoaded();
     const result = tokenCache.delete(key);
-    saveTokens(); // Save to file whenever we delete a token
+    // Save tokens after deletion
+    saveTokens();
+
+    // Also remove any aliases that point to this token to keep aliases.json consistent
+    try {
+      const aliasEntries = await aliases.entriesArray();
+      for (const [alias, mappedToken] of aliasEntries) {
+        if (mappedToken === key) {
+          await aliases.delete(alias);
+          console.log(`Alias removed for deleted token: ${alias}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error cleaning up aliases after token delete:', err);
+    }
+
     return result;
   },
   entries: async () => {
@@ -143,6 +158,17 @@ export async function cleanupExpiredTokens() {
     console.log(`Cleanup completed: ${deletedCount} expired files/tokens removed`);
   }
   
+  // Sweep aliases that point to tokens that no longer exist
+  try {
+    const tokenKeys = new Set<string>(Array.from(tokenCache.keys()));
+    const removed = await sweepInvalidAliases(tokenKeys);
+    if (removed > 0) {
+      console.log(`Sweep completed: ${removed} orphan aliases removed`);
+    }
+  } catch (aliasErr) {
+    console.error('Error sweeping orphan aliases:', aliasErr);
+  }
+
   return deletedCount;
 }
 
