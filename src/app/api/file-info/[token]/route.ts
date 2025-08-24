@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { downloadTokens } from '../../tokenStorage';
+import { aliases, normalizeAlias } from '../../aliasStorage';
 import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
 
 export async function GET(
@@ -30,8 +31,18 @@ export async function GET(
     
     console.log('File-info API called with token:', token);
     
-    // Check if token exists and is valid
-    const tokenData = await downloadTokens.get(token);
+    // Resolve token or alias
+    let resolvedToken = token;
+    let usedAlias = false;
+    let tokenData = await downloadTokens.get(resolvedToken);
+    if (!tokenData) {
+      const mapped = await aliases.get(normalizeAlias(resolvedToken));
+      if (mapped) {
+        resolvedToken = mapped;
+        usedAlias = true;
+        tokenData = await downloadTokens.get(resolvedToken);
+      }
+    }
     
     console.log('Token data found:', tokenData);
     console.log('Total tokens in storage:', await downloadTokens.size());
@@ -46,7 +57,10 @@ export async function GET(
     
     // Check if token has expired
     if (Date.now() > tokenData.expiresAt) {
-      await downloadTokens.delete(token); // Clean up expired token
+      await downloadTokens.delete(resolvedToken); // Clean up expired token
+      if (usedAlias) {
+        await aliases.delete(normalizeAlias(token));
+      }
       return NextResponse.json(
         { error: 'Download token has expired', isValid: false }, 
         { status: 410 }

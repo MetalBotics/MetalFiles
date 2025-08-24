@@ -12,7 +12,8 @@ export class ChunkedUpload {
       salt: Uint8Array;
     },
     metadataIv: string,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
+    alias?: string
   ): Promise<any> {
     const { encryptedData, key, iv, salt } = encryptionData;
     const encryptedBuffer = new Uint8Array(encryptedData);
@@ -64,7 +65,7 @@ export class ChunkedUpload {
     const completeResponse = await fetch('/api/upload/complete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uploadId })
+      body: JSON.stringify({ uploadId, alias })
     });
 
     if (!completeResponse.ok) {

@@ -3,6 +3,7 @@ import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { downloadTokens } from '../../tokenStorage';
+import { aliases, normalizeAlias } from '../../aliasStorage';
 import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
 
 export async function DELETE(
@@ -33,8 +34,18 @@ export async function DELETE(
 
     const { token } = await params;
     
-    // Check if token exists
-    const tokenData = await downloadTokens.get(token);
+    // Resolve token or alias
+    let resolvedToken = token;
+    let usedAlias = false;
+    let tokenData = await downloadTokens.get(resolvedToken);
+    if (!tokenData) {
+      const mapped = await aliases.get(normalizeAlias(resolvedToken));
+      if (mapped) {
+        resolvedToken = mapped;
+        usedAlias = true;
+        tokenData = await downloadTokens.get(resolvedToken);
+      }
+    }
     
     if (!tokenData) {
       return NextResponse.json(
@@ -62,8 +73,11 @@ export async function DELETE(
     }
     
     // Remove token from storage
-    await downloadTokens.delete(token);
-    console.log(`Token removed by user: ${token}`);
+    await downloadTokens.delete(resolvedToken);
+    if (usedAlias) {
+      await aliases.delete(normalizeAlias(token));
+    }
+    console.log(`Token removed by user: ${resolvedToken}`);
       return NextResponse.json({
       success: true,
       message: 'File and token deleted successfully'

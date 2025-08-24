@@ -29,6 +29,8 @@ type DownloadUrl = {
   id: string;
   fileName: string;
   downloadUrl: string;
+  aliasUrl?: string;
+  alias?: string;
   expiresAt: string;
 };
 
@@ -104,6 +106,9 @@ export default function Home() {
   );
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [aliasInputs, setAliasInputs] = useState<{ [id: string]: string }>({});
+  const [aliasStatuses, setAliasStatuses] = useState<{ [id: string]: 'idle' | 'loading' | 'success' | 'error' }>({});
+  const [aliasErrors, setAliasErrors] = useState<{ [id: string]: string | null }>({});
   const [isClearing, setIsClearing] = useState(false);
   const [showFileRestoreNotice, setShowFileRestoreNotice] = useState(false);
   const [linkValidationStatus, setLinkValidationStatus] = useState<{
@@ -557,6 +562,8 @@ export default function Home() {
               id: result.downloadToken, // Use the actual token as ID for uniqueness
               fileName: result.originalName || file.name,
               downloadUrl: result.downloadUrl,
+              aliasUrl: result.aliasUrl,
+              alias: result.alias,
               expiresAt: result.expiresAt,
             };
 
@@ -610,6 +617,47 @@ export default function Home() {
       console.error("Upload error:", error);
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // Alias helpers (client-side validation and creation per file)
+  const isValidAlias = (input: string): boolean => {
+    return /^[a-z0-9][a-z0-9._-]{2,63}$/.test(input);
+  };
+
+  const createAliasForItem = async (id: string) => {
+    const raw = (aliasInputs[id] || '').trim().toLowerCase();
+    if (!raw) {
+      setAliasErrors(prev => ({ ...prev, [id]: 'Alias is required' }));
+      return;
+    }
+    if (!isValidAlias(raw)) {
+      setAliasErrors(prev => ({ ...prev, [id]: 'Invalid alias format' }));
+      return;
+    }
+    try {
+      setAliasStatuses(prev => ({ ...prev, [id]: 'loading' }));
+      setAliasErrors(prev => ({ ...prev, [id]: null }));
+      const resp = await fetch('/api/alias', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: id, alias: raw })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        const msg = data?.error || 'Failed to create alias';
+        throw new Error(msg);
+      }
+      // Update the item in our list
+      const existing = downloadUrls.find((d) => d.id === id);
+      if (existing) {
+        const updated = { ...existing, aliasUrl: data.aliasUrl, alias: data.alias };
+        dispatchDownloadUrls({ type: 'ADD', payload: updated });
+      }
+      setAliasStatuses(prev => ({ ...prev, [id]: 'success' }));
+    } catch (err) {
+      setAliasStatuses(prev => ({ ...prev, [id]: 'error' }));
+      setAliasErrors(prev => ({ ...prev, [id]: err instanceof Error ? err.message : 'Failed to create alias' }));
     }
   };
 
@@ -1507,10 +1555,40 @@ export default function Home() {
                           >
                             {item.fileName}
                           </p>
-                          <p className="text-gray-400 text-sm mt-1">
-                            Expires: {new Date(item.expiresAt).toLocaleString()}
-                          </p>
-                        </div>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Expires: {new Date(item.expiresAt).toLocaleString()}
+                  </p>
+                  {item.aliasUrl ? (
+                    <p className="text-green-400 text-xs mt-1 break-words">
+                      Alias link: <a href={item.aliasUrl} className="underline hover:text-green-300">{item.aliasUrl}</a>
+                    </p>
+                  ) : (
+                    <div className="mt-2">
+                      <label className="block text-xs text-gray-400">Add an alias for this link</label>
+                      <div className="flex gap-2 mt-1">
+                        <input
+                          type="text"
+                          value={aliasInputs[item.id] || ''}
+                          onChange={(e) => setAliasInputs(prev => ({ ...prev, [item.id]: e.target.value.toLowerCase() }))}
+                          placeholder="e.g. project-report, photo_2024"
+                          className="flex-1 px-2 py-1 bg-black border border-green-700 text-green-200 placeholder-green-800 focus:outline-none focus:border-green-400 text-sm"
+                          spellCheck={false}
+                        />
+                        <button
+                          onClick={() => createAliasForItem(item.id)}
+                          disabled={aliasStatuses[item.id] === 'loading'}
+                          className="px-3 py-1 bg-black border-2 border-green-600 text-green-300 hover:bg-green-600 hover:text-black transition-all duration-200 text-sm cursor-pointer disabled:opacity-50"
+                        >
+                          {aliasStatuses[item.id] === 'loading' ? 'ADDING...' : 'ADD ALIAS'}
+                        </button>
+                      </div>
+                      {aliasErrors[item.id] && (
+                        <p className="text-red-400 text-xs mt-1">{aliasErrors[item.id]}</p>
+                      )}
+                      <p className="text-gray-500 text-[10px] mt-1">3–64 chars, lowercase letters, numbers, dashes, underscores, dots. Must start with a letter or number.</p>
+                    </div>
+                  )}
+                </div>
                         <div className="flex items-center gap-3">
                           {/* Status indicator */}
                           <div className="flex items-center">
@@ -1620,6 +1698,7 @@ export default function Home() {
                             </svg>
                             {copiedId === item.id ? "COPIED!" : "COPY LINK"}
                           </button>
+                          
                           <button
                             onClick={() => removeDownloadUrl(item.id)}
                             disabled={deletingIds.has(item.id)}
@@ -1667,10 +1746,10 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-6 pt-4 border-t border-white">
+                <div className="mt-6 pt-4">
                   <p
                     className="text-gray-400 text-sm text-center"
-                    style={{ fontFamily: "Roboto, sans-serif" }}
+                    style={{ fontFamily: "Roboto, sans-serif", marginBottom: "2rem" }}
                   >
                     Download links valid for 24 hours • Share securely
                   </p>
