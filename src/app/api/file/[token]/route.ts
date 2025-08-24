@@ -3,6 +3,7 @@ import { createReadStream, existsSync, statSync } from 'fs';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { downloadTokens } from '../../tokenStorage';
+import { aliases, normalizeAlias } from '../../aliasStorage';
 import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
 
 // Configure for large file downloads
@@ -37,8 +38,18 @@ export async function GET(
 
     const { token } = await params;
     
-    // Check if token exists and is valid
-    const tokenData = await downloadTokens.get(token);
+    // Resolve token or alias
+    let resolvedToken = token;
+    let usedAlias = false;
+    let tokenData = await downloadTokens.get(resolvedToken);
+    if (!tokenData) {
+      const mapped = await aliases.get(normalizeAlias(resolvedToken));
+      if (mapped) {
+        resolvedToken = mapped;
+        usedAlias = true;
+        tokenData = await downloadTokens.get(resolvedToken);
+      }
+    }
     
     if (!tokenData) {
       return NextResponse.json(
@@ -49,7 +60,10 @@ export async function GET(
     
     // Check if token has expired
     if (Date.now() > tokenData.expiresAt) {
-      await downloadTokens.delete(token); // Clean up expired token
+      await downloadTokens.delete(resolvedToken); // Clean up expired token
+      if (usedAlias) {
+        await aliases.delete(normalizeAlias(token));
+      }
       return NextResponse.json(
         { error: 'Download token has expired' }, 
         { status: 410 }
@@ -111,8 +125,11 @@ export async function GET(
         // Don't fail the response if file deletion fails
       }
         // Remove token from storage since file is served and deleted
-      await downloadTokens.delete(token);
-      console.log(`Token removed: ${token}`);
+      await downloadTokens.delete(resolvedToken);
+      if (usedAlias) {
+        await aliases.delete(normalizeAlias(token));
+      }
+      console.log(`Token removed: ${resolvedToken}`);
       
       return response;
       

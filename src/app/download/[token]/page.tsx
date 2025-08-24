@@ -204,7 +204,7 @@ export default function DownloadPage() {
               className="text-center"
               style={{ fontFamily: "Roboto, sans-serif" }}
             >
-              <div className="animate-spin text-green-500 mx-auto mb-4">
+              <div className="animate-spin origin-center inline-block text-green-500 mx-auto mb-4">
                 <svg
                   className="w-12 h-12"
                   fill="none"
@@ -400,7 +400,7 @@ export default function DownloadPage() {
                   {downloading ? (
                     <>
                       <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                        className="animate-spin origin-center inline-block -ml-1 mr-3 h-5 w-5 text-white"
                         fill="none"
                         viewBox="0 0 24 24"
                       >

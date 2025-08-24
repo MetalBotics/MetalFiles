@@ -2,6 +2,7 @@
 import { writeFile, readFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { aliases } from './aliasStorage';
 
 export interface TokenData {
   filename: string;
@@ -122,6 +123,18 @@ export async function cleanupExpiredTokens() {
       
       // Remove token from storage
       await downloadTokens.delete(token);
+      // Remove any aliases pointing to this token
+      try {
+        const aliasEntries = await aliases.entries();
+        for (const [alias, mappedToken] of aliasEntries) {
+          if (mappedToken === token) {
+            await aliases.delete(alias);
+            console.log(`Alias removed during cleanup: ${alias}`);
+          }
+        }
+      } catch (aliasErr) {
+        console.error('Error cleaning up aliases:', aliasErr);
+      }
       deletedCount++;
     }
   }

@@ -4,6 +4,7 @@ import { join } from 'path';
 import crypto from 'crypto';
 import { downloadTokens, cleanupExpiredTokens } from '../tokenStorage';
 import { uploadRateLimiter, checkRateLimit } from '../rateLimiter';
+import { aliases, normalizeAlias, isValidAlias } from '../aliasStorage';
 
 // Configure for large file uploads
 export const runtime = 'nodejs';
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
     const metadataIv = data.get('metadataIv') as string;
     const originalName = data.get('originalName') as string;
     const originalSize = parseInt(data.get('originalSize') as string);
+    const requestedAliasRaw = (data.get('alias') as string) || '';
 
     console.log('Parsed data:', {
       encryptedFile: !!encryptedFile,
@@ -168,6 +170,27 @@ export async function POST(request: NextRequest) {
       console.log(`File written successfully: ${filename}, size: ${buffer.length} bytes`);
     }
     
+    // If an alias was provided, validate and ensure uniqueness before generating token
+    let aliasToSet: string | null = null;
+    if (requestedAliasRaw && requestedAliasRaw.trim().length > 0) {
+      const normalized = normalizeAlias(requestedAliasRaw);
+      if (!isValidAlias(normalized)) {
+        return NextResponse.json({
+          success: false,
+          error: 'Invalid alias. Use 3-64 chars: lowercase letters, numbers, dash, underscore, dot; must start with a letter or number.'
+        }, { status: 400 });
+      }
+      const tokenCollision = await downloadTokens.get(normalized);
+      const aliasCollision = await aliases.get(normalized);
+      if (tokenCollision || aliasCollision) {
+        return NextResponse.json({
+          success: false,
+          error: 'Alias already in use. Choose a different one.'
+        }, { status: 409 });
+      }
+      aliasToSet = normalized;
+    }
+
     // Generate a secure download token
     const downloadToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours from now
@@ -190,6 +213,11 @@ export async function POST(request: NextRequest) {
     const protocol = forwardedProto || (request.nextUrl.protocol.replace(':', ''));
     const host = request.headers.get('host') || request.nextUrl.host;
     const downloadUrl = `${protocol}://${host}/download/${downloadToken}`;
+    const aliasUrl = aliasToSet ? `${protocol}://${host}/download/${aliasToSet}` : undefined;
+    
+    if (aliasToSet) {
+      await aliases.set(aliasToSet, downloadToken);
+    }
     
     console.log(`Generated download URL: ${downloadUrl}`);
     console.log(`Request origin: ${request.nextUrl.origin}`);
@@ -207,6 +235,8 @@ export async function POST(request: NextRequest) {
       originalName: originalName,
       size: originalSize,
       downloadUrl: downloadUrl,
+      aliasUrl: aliasUrl,
+      alias: aliasToSet || undefined,
       downloadToken: downloadToken,
       expiresAt: new Date(expiresAt).toISOString()    }, {
       headers: {

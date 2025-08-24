@@ -4,6 +4,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 import crypto from 'crypto';
 import { downloadTokens } from '../../tokenStorage';
+import { aliases, normalizeAlias } from '../../aliasStorage';
 import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
 
 // Server-side decryption function using Node.js crypto
@@ -110,8 +111,18 @@ export async function GET(
 
     console.log(`Download request from IP: ${rateLimit.ip}, remaining: ${rateLimit.remaining}`);
     
-    // Check if token exists and is valid
-    const tokenData = await downloadTokens.get(token);
+    // Resolve token or alias
+    let resolvedToken = token;
+    let usedAlias = false;
+    let tokenData = await downloadTokens.get(resolvedToken);
+    if (!tokenData) {
+      const mapped = await aliases.get(normalizeAlias(resolvedToken));
+      if (mapped) {
+        resolvedToken = mapped;
+        usedAlias = true;
+        tokenData = await downloadTokens.get(resolvedToken);
+      }
+    }
     
     if (!tokenData) {
       return NextResponse.json(
@@ -122,7 +133,10 @@ export async function GET(
     
     // Check if token has expired
     if (Date.now() > tokenData.expiresAt) {
-      await downloadTokens.delete(token); // Clean up expired token
+      await downloadTokens.delete(resolvedToken); // Clean up expired token
+      if (usedAlias) {
+        await aliases.delete(normalizeAlias(token));
+      }
       return NextResponse.json(
         { error: 'Download token has expired' }, 
         { status: 410 }
@@ -151,8 +165,11 @@ export async function GET(
       );
       
       // Delete the token after successful download (one-time use)
-      await downloadTokens.delete(token);
-      console.log(`Token ${token} deleted after successful download of ${tokenData.originalName}`);
+      await downloadTokens.delete(resolvedToken);
+      if (usedAlias) {
+        await aliases.delete(normalizeAlias(token));
+      }
+      console.log(`Token ${resolvedToken} deleted after successful download of ${tokenData.originalName}`);
       
       // Delete the physical file after successful download (one-time use)
       try {
