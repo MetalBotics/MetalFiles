@@ -4,12 +4,12 @@ import { FileEncryption } from './encryption';
 export class ChunkedUpload {
   private static readonly CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
   private static readonly MAX_RETRIES = 3;
-  private static readonly CONCURRENCY = 3;
 
   static async uploadFileInChunks(
     file: File,
     onProgress?: (progress: number) => void,
-    alias?: string
+    alias?: string,
+    concurrency?: number
   ): Promise<any> {
     try {
       const { key, iv, salt, encryptedStream, totalChunks } =
@@ -45,6 +45,14 @@ export class ChunkedUpload {
       const { uploadId } = await sessionResponse.json();
       console.log('Upload session started:', uploadId);
 
+      // Determine how many chunks to upload in parallel.
+      // Defaults to the browser's hardwareConcurrency, allowing the
+      // transfer to use all available cores. Higher concurrency can
+      // improve throughput but increases memory and network pressure.
+      const runtimeConcurrency = Math.max(
+        1,
+        concurrency ?? navigator?.hardwareConcurrency ?? 3
+      );
 
       const activeUploads = new Set<Promise<void>>();
       let chunkIndex = 0;
@@ -70,7 +78,7 @@ export class ChunkedUpload {
           })
           .finally(() => activeUploads.delete(task));
 
-        if (activeUploads.size >= this.CONCURRENCY) {
+        if (activeUploads.size >= runtimeConcurrency) {
           await Promise.race(activeUploads);
         }
       }
