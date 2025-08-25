@@ -49,19 +49,25 @@ export class FileEncryption {  public static isCryptoAvailable(): boolean {
       ['encrypt', 'decrypt']
     );
   }
-  public static async encryptFile(file: File): Promise<{
-    encryptedData: ArrayBuffer;
+  public static async encryptFile(
+    file: File,
+    chunkSize = 5 * 1024 * 1024
+  ): Promise<{
     key: string;
     iv: Uint8Array;
     salt: Uint8Array;
+    encryptedStream: AsyncGenerator<Uint8Array, void, unknown>;
+    totalChunks: number;
   }> {
     try {
       this.ensureCryptoAvailable();
-      
+
       // Generate a random password for this file
-      const password = Array.from(window.crypto.getRandomValues(new Uint8Array(32)))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+      const password = Array.from(
+        window.crypto.getRandomValues(new Uint8Array(32))
+      )
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
 
       // Generate salt and IV
       const salt = window.crypto.getRandomValues(new Uint8Array(16));
@@ -70,26 +76,44 @@ export class FileEncryption {  public static isCryptoAvailable(): boolean {
       // Derive key from password
       const cryptoKey = await this.deriveKeyFromPassword(password, salt);
 
-      // Read file as array buffer
-      const fileBuffer = await file.arrayBuffer();      // Encrypt the file
-      const encryptedData = await window.crypto.subtle.encrypt(
-        {
-          name: 'AES-GCM',
-          iv: iv as BufferSource,
-        },
-        cryptoKey,
-        fileBuffer
-      );
+      const totalChunks = Math.ceil(file.size / chunkSize);
+
+      async function* stream(): AsyncGenerator<Uint8Array, void, unknown> {
+        let offset = 0;
+        let index = 0;
+        while (offset < file.size) {
+          const slice = file.slice(offset, offset + chunkSize);
+          const sliceBuffer = await slice.arrayBuffer();
+          try {
+            const encrypted = await window.crypto.subtle.encrypt(
+              {
+                name: "AES-GCM",
+                iv: iv as BufferSource,
+              },
+              cryptoKey,
+              sliceBuffer
+            );
+            console.log(`Encrypted chunk ${index + 1}/${totalChunks}`);
+            yield new Uint8Array(encrypted);
+          } catch (err) {
+            console.error("Chunk encryption error:", err);
+            throw err;
+          }
+          offset += chunkSize;
+          index++;
+        }
+      }
 
       return {
-        encryptedData,
         key: password,
         iv,
         salt,
+        encryptedStream: stream(),
+        totalChunks,
       };
     } catch (error) {
-      console.error('Encryption error:', error);
-      throw new Error('Failed to encrypt file');
+      console.error("Encryption error:", error);
+      throw new Error("Failed to encrypt file");
     }
   }
   public static async decryptFile(
