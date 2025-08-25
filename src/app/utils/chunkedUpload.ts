@@ -51,7 +51,12 @@ export class ChunkedUpload {
 
       for await (const chunk of encryptedStream) {
         const currentIndex = chunkIndex++;
-        const task = this.uploadChunkWithRetry(uploadId, currentIndex, chunk);
+        const task = this.uploadChunkWithRetry(
+          uploadId,
+          currentIndex,
+          chunk,
+          totalChunks
+        );
         activeUploads.add(task);
 
         task
@@ -94,10 +99,12 @@ export class ChunkedUpload {
     uploadId: string,
     chunkIndex: number,
     chunk: Uint8Array,
+    totalChunks: number,
+    onProgress?: (progress: number) => void,
     retryCount = 0
   ): Promise<void> {
     try {
-      console.log(`Uploading chunk ${chunkIndex + 1}`);
+      console.log(`Uploading chunk ${chunkIndex + 1}/${totalChunks}`);
       const formData = new FormData();
       formData.append('uploadId', uploadId);
       formData.append('chunkIndex', chunkIndex.toString());
@@ -111,7 +118,13 @@ export class ChunkedUpload {
       if (!response.ok) {
         throw new Error(`Chunk upload failed: ${response.status}`);
       }
-      console.log(`Chunk ${chunkIndex + 1} uploaded successfully`);
+      if (onProgress) {
+        const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
+        onProgress(progress);
+      }
+      console.log(
+        `Chunk ${chunkIndex + 1}/${totalChunks} uploaded successfully`
+      );
     } catch (error) {
       console.error(`Error uploading chunk ${chunkIndex}:`, error);
       if (retryCount < this.MAX_RETRIES) {
@@ -123,6 +136,8 @@ export class ChunkedUpload {
           uploadId,
           chunkIndex,
           chunk,
+          totalChunks,
+          onProgress,
           retryCount + 1
         );
       }
