@@ -16,7 +16,7 @@ export class ChunkedUpload {
         await FileEncryption.encryptFile(file, this.CHUNK_SIZE);
 
       const totalSize = file.size + totalChunks * 16; // approximate with GCM tag
-
+      
       console.log(
         `Starting chunked upload: ${totalChunks} chunks, ${this.formatSize(totalSize)} total`
       );
@@ -44,6 +44,7 @@ export class ChunkedUpload {
 
       const { uploadId } = await sessionResponse.json();
       console.log('Upload session started:', uploadId);
+
 
       const activeUploads = new Set<Promise<void>>();
       let chunkIndex = 0;
@@ -88,6 +89,7 @@ export class ChunkedUpload {
         throw new Error('Failed to complete upload');
       }
 
+
       return await completeResponse.json();
     } catch (error) {
       console.error('Chunked upload failed:', error);
@@ -118,6 +120,7 @@ export class ChunkedUpload {
       if (!response.ok) {
         throw new Error(`Chunk upload failed: ${response.status}`);
       }
+
       if (onProgress) {
         const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
         onProgress(progress);
