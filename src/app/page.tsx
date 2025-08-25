@@ -1282,7 +1282,7 @@ export default function Home() {
                     return (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-4 bg-black border border-gray-500 hover:border-gray-300 transition-colors duration-200"
+                        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-black border border-gray-500 hover:border-gray-300 transition-colors duration-200"
                       >
                         <div className="flex items-center flex-1">
                           <div
@@ -1377,7 +1377,7 @@ export default function Home() {
                                 )}
                               </p>
                               {status === "uploading" && (
-                                <div className="w-32 bg-gray-700 border border-gray-500 h-2 ml-4">
+                                <div className="w-24 sm:w-32 bg-gray-700 border border-gray-500 h-2 mt-2 sm:mt-0 sm:ml-4">
                                   <div
                                     className="bg-green-400 h-2 transition-all duration-300"
                                     style={{
@@ -1389,46 +1389,48 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
-                        <span
-                          className={`text-xs px-2 py-1 border ml-4 ${
-                            status === "success"
-                              ? "bg-green-500/20 text-green-400 border-green-500"
-                              : status === "error"
-                              ? "bg-red-500/20 text-red-400 border-red-500"
-                              : status === "uploading"
-                              ? "bg-yellow-500/20 text-yellow-400 border-yellow-500"
-                              : "bg-gray-500/20 text-gray-400 border-gray-500"
-                          }`}
-                        >
-                          {status === "success"
-                            ? "Uploaded"
-                            : status === "error"
-                            ? "Failed"
-                            : status === "uploading"
-                            ? `${Math.round(progress)}%`
-                            : "Pending"}
-                        </span>
-                        {status !== "uploading" && (
-                          <button
-                            onClick={() => removeFile(index)}
-                            className="flex items-center justify-center w-10 h-10 bg-black border border-red-500 hover:bg-red-500 hover:text-black text-red-400 transition-colors duration-200 cursor-pointer ml-4"
-                            title="Remove from list"
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                          <span
+                            className={`text-xs px-2 py-1 border whitespace-nowrap ${
+                              status === "success"
+                                ? "bg-green-500/20 text-green-400 border-green-500"
+                                : status === "error"
+                                ? "bg-red-500/20 text-red-400 border-red-500"
+                                : status === "uploading"
+                                ? "bg-yellow-500/20 text-yellow-400 border-yellow-500"
+                                : "bg-gray-500/20 text-gray-400 border-gray-500"
+                            }`}
                           >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
+                            {status === "success"
+                              ? "Uploaded"
+                              : status === "error"
+                              ? "Failed"
+                              : status === "uploading"
+                              ? `${Math.round(progress)}%`
+                              : "Pending"}
+                          </span>
+                          {status !== "uploading" && (
+                            <button
+                              onClick={() => removeFile(index)}
+                              className="flex items-center justify-center w-10 h-10 bg-black border border-red-500 hover:bg-red-500 hover:text-black text-red-400 transition-colors duration-200 cursor-pointer"
+                              title="Remove from list"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          </button>
-                        )}
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -1565,19 +1567,19 @@ export default function Home() {
                   ) : (
                     <div className="mt-2">
                       <label className="block text-xs text-gray-400">Add an alias for this link</label>
-                      <div className="flex gap-2 mt-1">
+                      <div className="flex flex-col sm:flex-row gap-2 mt-1">
                         <input
                           type="text"
                           value={aliasInputs[item.id] || ''}
                           onChange={(e) => setAliasInputs(prev => ({ ...prev, [item.id]: e.target.value.toLowerCase() }))}
                           placeholder="e.g. project-report, photo_2024"
-                          className="flex-1 px-2 py-1 bg-black border border-green-700 text-green-200 placeholder-green-800 focus:outline-none focus:border-green-400 text-sm"
+                          className="w-full sm:flex-1 px-2 py-1 bg-black border border-green-700 text-green-200 placeholder-green-800 focus:outline-none focus:border-green-400 text-sm"
                           spellCheck={false}
                         />
                         <button
                           onClick={() => createAliasForItem(item.id)}
                           disabled={aliasStatuses[item.id] === 'loading'}
-                          className="px-3 py-1 bg-black border-2 border-green-600 text-green-300 hover:bg-green-600 hover:text-black transition-all duration-200 text-sm cursor-pointer disabled:opacity-50"
+                          className="px-3 py-1 bg-black border-2 border-green-600 text-green-300 hover:bg-green-600 hover:text-black transition-all duration-200 text-sm cursor-pointer disabled:opacity-50 self-stretch sm:self-auto"
                         >
                           {aliasStatuses[item.id] === 'loading' ? 'ADDING...' : 'ADD ALIAS'}
                         </button>
@@ -1589,7 +1591,7 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-wrap justify-end w-full sm:w-auto">
                           {/* Status indicator */}
                           <div className="flex items-center">
                             {linkValidationStatus[item.id] === "checking" ? (
@@ -1753,7 +1755,7 @@ export default function Home() {
                   >
                     Download links valid for 24 hours • Share securely
                   </p>
-                  <div className="flex gap-3 justify-center mt-3">
+                  <div className="flex gap-3 justify-center mt-3 flex-wrap">
                     <button
                       onClick={validateAllDownloadLinks}
                       className="cursor-pointer matrix-button flex items-center gap-2 px-4 py-2 bg-black border-2 border-white text-white hover:bg-white hover:text-black transition-all duration-300 text-sm"
