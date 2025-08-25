@@ -447,71 +447,72 @@ export default function Home() {
         try {
           // Encrypt the file client-side
           setUploadProgress((prev) => ({ ...prev, [fileKey]: 10 }));
-          console.log("Starting encryption for file:", file.name);
-
-          let encryptionResult;
-          try {
-            encryptionResult = await FileEncryption.encryptFile(file);
-            console.log("Encryption completed for file:", file.name);
-          } catch (encryptError) {
-            console.error("Encryption failed:", encryptError);
-            throw new Error(
-              `Encryption failed: ${
-                encryptError instanceof Error
-                  ? encryptError.message
-                  : "Unknown error"
-              }`
-            );
-          }
-
-          setUploadProgress((prev) => ({ ...prev, [fileKey]: 20 }));
-
-          // Determine upload method based on file size
-          const encryptedSize = encryptionResult.encryptedData.byteLength;
           const CHUNK_THRESHOLD = 100 * 1024 * 1024; // 100MB threshold for chunked upload
 
           let result;
 
-          if (encryptedSize > CHUNK_THRESHOLD) {
+          if (file.size > CHUNK_THRESHOLD) {
             console.log(
               `Large file detected (${UploadDiagnostics.formatFileSize(
-                encryptedSize
+                file.size
               )}), using chunked upload`
             );
 
             // Mark as chunked file
             setChunkedFiles((prev) => ({ ...prev, [fileKey]: true }));
 
-            // Use chunked upload for large files
-            const metadataIv = btoa(
-              String.fromCharCode(...encryptionResult.iv)
-            );
-
             result = await ChunkedUpload.uploadFileInChunks(
               file,
-              encryptionResult,
-              metadataIv,
               (progress) => {
-                // Map chunked upload progress (20-100%)
-                const mappedProgress = Math.round(20 + progress * 0.8);
                 setUploadProgress((prev) => ({
                   ...prev,
-                  [fileKey]: mappedProgress,
+                  [fileKey]: progress,
                 }));
               }
             );
           } else {
             console.log(
               `Standard file size (${UploadDiagnostics.formatFileSize(
-                encryptedSize
+                file.size
               )}), using single request upload`
             );
 
             // Mark as non-chunked file
             setChunkedFiles((prev) => ({ ...prev, [fileKey]: false }));
 
-            // Use standard upload for smaller files
-            const encryptedBlob = new Blob([encryptionResult.encryptedData], {
+            console.log("Starting encryption for file:", file.name);
+
+            let encryptionResult;
+            try {
+              encryptionResult = await FileEncryption.encryptFile(file);
+              console.log("Encryption completed for file:", file.name);
+            } catch (encryptError) {
+              console.error("Encryption failed:", encryptError);
+              throw new Error(
+                `Encryption failed: ${
+                  encryptError instanceof Error
+                    ? encryptError.message
+                    : "Unknown error"
+                }`
+              );
+            }
+
+            const chunks: Uint8Array[] = [];
+            for await (const chunk of encryptionResult.encryptedStream) {
+              chunks.push(chunk);
+            }
+            const totalSize = chunks.reduce((acc, c) => acc + c.byteLength, 0);
+            const merged = new Uint8Array(totalSize);
+            let offset = 0;
+            for (const c of chunks) {
+              merged.set(c, offset);
+              offset += c.byteLength;
+            }
+            const encryptedData = merged.buffer;
+
+            setUploadProgress((prev) => ({ ...prev, [fileKey]: 20 }));
+
+            const encryptedBlob = new Blob([encryptedData], {
               type: "application/octet-stream",
             });
             const encryptedFile = new File(
