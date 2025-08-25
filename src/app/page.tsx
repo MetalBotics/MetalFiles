@@ -1638,9 +1638,10 @@ export default function Home() {
 
                           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mb-0 sm:mb-3 ml-0 sm:ml-1">
                             {/* Mobile: status centered on top; Desktop: status inline to the right */}
-                            <div className="w-full flex justify-center sm:justify-end mb-2 sm:mb-0">
+                            <div className="w-full flex justify-center sm:justify-end mb-2 sm:mb-0 mt-2 sm:mt-0">
                               <div className="flex items-center">
-                                {linkValidationStatus[item.id] === "checking" ? (
+                                {linkValidationStatus[item.id] ===
+                                "checking" ? (
                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-900/30 text-yellow-300 border border-yellow-600/30">
                                     <svg
                                       className="animate-spin w-3 h-3 mr-1"
@@ -1663,7 +1664,8 @@ export default function Home() {
                                     </svg>
                                     Checking...
                                   </span>
-                                ) : linkValidationStatus[item.id] === "valid" ? (
+                                ) : linkValidationStatus[item.id] ===
+                                  "valid" ? (
                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-900/30 text-green-300 border border-green-600/30">
                                     <svg
                                       className="w-3 h-3 mr-1"
@@ -1678,7 +1680,8 @@ export default function Home() {
                                     </svg>
                                     Valid
                                   </span>
-                                ) : linkValidationStatus[item.id] === "invalid" ? (
+                                ) : linkValidationStatus[item.id] ===
+                                  "invalid" ? (
                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-900/30 text-red-300 border border-red-600/30">
                                     <svg
                                       className="w-3 h-3 mr-1"
