@@ -4,6 +4,7 @@ import { FileEncryption } from './encryption';
 export class ChunkedUpload {
   private static readonly CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
   private static readonly MAX_RETRIES = 3;
+  private static readonly CONCURRENCY = 3;
 
   static async uploadFileInChunks(
     file: File,
@@ -15,7 +16,7 @@ export class ChunkedUpload {
         await FileEncryption.encryptFile(file, this.CHUNK_SIZE);
 
       const totalSize = file.size + totalChunks * 16; // approximate with GCM tag
-
+      
       console.log(
         `Starting chunked upload: ${totalChunks} chunks, ${this.formatSize(totalSize)} total`
       );
@@ -44,17 +45,37 @@ export class ChunkedUpload {
       const { uploadId } = await sessionResponse.json();
       console.log('Upload session started:', uploadId);
 
+
+      const activeUploads = new Set<Promise<void>>();
       let chunkIndex = 0;
+      let uploaded = 0;
+
       for await (const chunk of encryptedStream) {
-        await this.uploadChunkWithRetry(
+        const currentIndex = chunkIndex++;
+        const task = this.uploadChunkWithRetry(
           uploadId,
-          chunkIndex,
+          currentIndex,
           chunk,
-          totalChunks,
-          onProgress
+          totalChunks
         );
-        chunkIndex++;
+        activeUploads.add(task);
+
+        task
+          .then(() => {
+            uploaded++;
+            if (onProgress) {
+              const progress = Math.round((uploaded / totalChunks) * 100);
+              onProgress(progress);
+            }
+          })
+          .finally(() => activeUploads.delete(task));
+
+        if (activeUploads.size >= this.CONCURRENCY) {
+          await Promise.race(activeUploads);
+        }
       }
+
+      await Promise.all(activeUploads);
 
       // Complete upload
       const completeResponse = await fetch('/api/upload/complete', {
@@ -67,6 +88,7 @@ export class ChunkedUpload {
         console.error('Failed to complete upload');
         throw new Error('Failed to complete upload');
       }
+
 
       return await completeResponse.json();
     } catch (error) {
@@ -103,8 +125,9 @@ export class ChunkedUpload {
         const progress = Math.round(((chunkIndex + 1) / totalChunks) * 100);
         onProgress(progress);
       }
-
-      console.log(`Chunk ${chunkIndex + 1}/${totalChunks} uploaded successfully`);
+      console.log(
+        `Chunk ${chunkIndex + 1}/${totalChunks} uploaded successfully`
+      );
     } catch (error) {
       console.error(`Error uploading chunk ${chunkIndex}:`, error);
       if (retryCount < this.MAX_RETRIES) {
