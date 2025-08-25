@@ -107,8 +107,12 @@ export default function Home() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [aliasInputs, setAliasInputs] = useState<{ [id: string]: string }>({});
-  const [aliasStatuses, setAliasStatuses] = useState<{ [id: string]: 'idle' | 'loading' | 'success' | 'error' }>({});
-  const [aliasErrors, setAliasErrors] = useState<{ [id: string]: string | null }>({});
+  const [aliasStatuses, setAliasStatuses] = useState<{
+    [id: string]: "idle" | "loading" | "success" | "error";
+  }>({});
+  const [aliasErrors, setAliasErrors] = useState<{
+    [id: string]: string | null;
+  }>({});
   const [isClearing, setIsClearing] = useState(false);
   const [showFileRestoreNotice, setShowFileRestoreNotice] = useState(false);
   const [linkValidationStatus, setLinkValidationStatus] = useState<{
@@ -626,38 +630,45 @@ export default function Home() {
   };
 
   const createAliasForItem = async (id: string) => {
-    const raw = (aliasInputs[id] || '').trim().toLowerCase();
+    const raw = (aliasInputs[id] || "").trim().toLowerCase();
     if (!raw) {
-      setAliasErrors(prev => ({ ...prev, [id]: 'Alias is required' }));
+      setAliasErrors((prev) => ({ ...prev, [id]: "Alias is required" }));
       return;
     }
     if (!isValidAlias(raw)) {
-      setAliasErrors(prev => ({ ...prev, [id]: 'Invalid alias format' }));
+      setAliasErrors((prev) => ({ ...prev, [id]: "Invalid alias format" }));
       return;
     }
     try {
-      setAliasStatuses(prev => ({ ...prev, [id]: 'loading' }));
-      setAliasErrors(prev => ({ ...prev, [id]: null }));
-      const resp = await fetch('/api/alias', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: id, alias: raw })
+      setAliasStatuses((prev) => ({ ...prev, [id]: "loading" }));
+      setAliasErrors((prev) => ({ ...prev, [id]: null }));
+      const resp = await fetch("/api/alias", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: id, alias: raw }),
       });
       const data = await resp.json();
       if (!resp.ok) {
-        const msg = data?.error || 'Failed to create alias';
+        const msg = data?.error || "Failed to create alias";
         throw new Error(msg);
       }
       // Update the item in our list
       const existing = downloadUrls.find((d) => d.id === id);
       if (existing) {
-        const updated = { ...existing, aliasUrl: data.aliasUrl, alias: data.alias };
-        dispatchDownloadUrls({ type: 'ADD', payload: updated });
+        const updated = {
+          ...existing,
+          aliasUrl: data.aliasUrl,
+          alias: data.alias,
+        };
+        dispatchDownloadUrls({ type: "ADD", payload: updated });
       }
-      setAliasStatuses(prev => ({ ...prev, [id]: 'success' }));
+      setAliasStatuses((prev) => ({ ...prev, [id]: "success" }));
     } catch (err) {
-      setAliasStatuses(prev => ({ ...prev, [id]: 'error' }));
-      setAliasErrors(prev => ({ ...prev, [id]: err instanceof Error ? err.message : 'Failed to create alias' }));
+      setAliasStatuses((prev) => ({ ...prev, [id]: "error" }));
+      setAliasErrors((prev) => ({
+        ...prev,
+        [id]: err instanceof Error ? err.message : "Failed to create alias",
+      }));
     }
   };
 
@@ -1544,205 +1555,247 @@ export default function Home() {
                       key={`download-${item.id}-${item.downloadUrl}`}
                       className="bg-black border border-gray-500 p-4 hover:border-gray-300 transition-colors duration-300"
                     >
-                      <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className="text-white font-medium break-words overflow-wrap-anywhere"
-                            style={{
-                              fontFamily: "Roboto, sans-serif",
-                              wordBreak: "break-word",
-                              overflowWrap: "anywhere",
-                            }}
-                            title={item.fileName}
-                          >
-                            {item.fileName}
-                          </p>
-                  <p className="text-gray-400 text-sm mt-1">
-                    Expires: {new Date(item.expiresAt).toLocaleString()}
-                  </p>
-                  {item.aliasUrl ? (
-                    <p className="text-green-400 text-xs mt-1 break-words">
-                      Alias link: <a href={item.aliasUrl} className="underline hover:text-green-300">{item.aliasUrl}</a>
-                    </p>
-                  ) : (
-                    <div className="mt-2">
-                      <label className="block text-xs text-gray-400">Add an alias for this link</label>
-                      <div className="flex flex-col sm:flex-row gap-2 mt-1">
-                        <input
-                          type="text"
-                          value={aliasInputs[item.id] || ''}
-                          onChange={(e) => setAliasInputs(prev => ({ ...prev, [item.id]: e.target.value.toLowerCase() }))}
-                          placeholder="e.g. project-report, photo_2024"
-                          className="w-full sm:flex-1 px-2 py-1 bg-black border border-green-700 text-green-200 placeholder-green-800 focus:outline-none focus:border-green-400 text-sm"
-                          spellCheck={false}
-                        />
-                        <button
-                          onClick={() => createAliasForItem(item.id)}
-                          disabled={aliasStatuses[item.id] === 'loading'}
-                          className="px-3 py-1 bg-black border-2 border-green-600 text-green-300 hover:bg-green-600 hover:text-black transition-all duration-200 text-sm cursor-pointer disabled:opacity-50 self-stretch sm:self-auto"
-                        >
-                          {aliasStatuses[item.id] === 'loading' ? 'ADDING...' : 'ADD ALIAS'}
-                        </button>
-                      </div>
-                      {aliasErrors[item.id] && (
-                        <p className="text-red-400 text-xs mt-1">{aliasErrors[item.id]}</p>
-                      )}
-                      <p className="text-gray-500 text-[10px] mt-1">3–64 chars, lowercase letters, numbers, dashes, underscores, dots. Must start with a letter or number.</p>
-                    </div>
-                  )}
-                </div>
-                        <div className="flex items-center gap-3 flex-wrap justify-end w-full sm:w-auto">
-                          {/* Status indicator */}
-                          <div className="flex items-center">
-                            {linkValidationStatus[item.id] === "checking" ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-900/30 text-yellow-300 border border-yellow-600/30">
-                                <svg
-                                  className="animate-spin w-3 h-3 mr-1"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
+                      <div className="space-y-2">
+                        {/* Top row: file meta and alias link if exists */}
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className="text-white font-medium break-words overflow-wrap-anywhere"
+                              style={{
+                                fontFamily: "Roboto, sans-serif",
+                                wordBreak: "break-word",
+                                overflowWrap: "anywhere",
+                              }}
+                              title={item.fileName}
+                            >
+                              {item.fileName}
+                            </p>
+                            <p className="text-gray-400 text-sm mt-1">
+                              Expires:{" "}
+                              {new Date(item.expiresAt).toLocaleString()}
+                            </p>
+                            {item.aliasUrl && (
+                              <p className="text-green-400 text-xs mt-1 break-words">
+                                Alias link:{" "}
+                                <a
+                                  href={item.aliasUrl}
+                                  className="underline hover:text-green-300"
                                 >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  ></circle>
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  ></path>
-                                </svg>
-                                Checking...
-                              </span>
-                            ) : linkValidationStatus[item.id] === "valid" ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-900/30 text-green-300 border border-green-600/30">
-                                <svg
-                                  className="w-3 h-3 mr-1"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                    clipRule="evenodd"
+                                  {item.aliasUrl}
+                                </a>
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Bottom row: alias editor (if needed) and right controls aligned */}
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex-1 min-w-0">
+                            {!item.aliasUrl && (
+                              <div className="mt-1">
+                                <label className="block text-xs text-gray-400">
+                                  Add an alias for this link
+                                </label>
+                                <div className="flex flex-col sm:flex-row gap-2 mt-1">
+                                  <input
+                                    type="text"
+                                    value={aliasInputs[item.id] || ""}
+                                    onChange={(e) =>
+                                      setAliasInputs((prev) => ({
+                                        ...prev,
+                                        [item.id]: e.target.value.toLowerCase(),
+                                      }))
+                                    }
+                                    placeholder="e.g. project-report, photo_2024"
+                                    className="w-full sm:flex-1 px-2 py-1 bg-black border border-green-700 text-green-200 placeholder-green-800 focus:outline-none focus:border-green-400 text-sm"
+                                    spellCheck={false}
                                   />
-                                </svg>
-                                Valid
-                              </span>
-                            ) : linkValidationStatus[item.id] === "invalid" ? (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-900/30 text-red-300 border border-red-600/30">
-                                <svg
-                                  className="w-3 h-3 mr-1"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                Invalid
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-900/30 text-gray-400 border border-gray-600/30">
-                                <svg
-                                  className="w-3 h-3 mr-1"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
-                                Unknown
-                              </span>
+                                  <button
+                                    onClick={() => createAliasForItem(item.id)}
+                                    disabled={
+                                      aliasStatuses[item.id] === "loading"
+                                    }
+                                    className="px-3 py-1 bg-black border-2 border-green-600 text-green-300 hover:bg-green-600 hover:text-black transition-all duration-200 text-sm cursor-pointer disabled:opacity-50 self-stretch sm:self-auto"
+                                  >
+                                    {aliasStatuses[item.id] === "loading"
+                                      ? "ADDING..."
+                                      : "ADD ALIAS"}
+                                  </button>
+                                </div>
+                                {aliasErrors[item.id] && (
+                                  <p className="text-red-400 text-xs mt-1">
+                                    {aliasErrors[item.id]}
+                                  </p>
+                                )}
+                                <p className="text-gray-500 text-[12px] mt-1">
+                                  3–64 chars, lowercase letters, numbers,
+                                  dashes, underscores, dots. Must start with a
+                                  letter or number.
+                                </p>
+                              </div>
                             )}
                           </div>
 
-                          <button
-                            onClick={() =>
-                              copyToClipboard(item.downloadUrl, item.id)
-                            }
-                            className={`matrix-button flex items-center gap-2 px-4 py-2 ${
-                              copiedId === item.id
-                                ? "bg-green-600 hover:bg-green-700 text-white"
-                                : "bg-black border-2 border-white hover:bg-white hover:text-black text-white"
-                            } transition-all duration-200 text-sm cursor-pointer`}
-                            style={{ fontFamily: "Roboto, sans-serif" }}
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              {copiedId === item.id ? (
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              ) : (
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                />
-                              )}
-                            </svg>
-                            {copiedId === item.id ? "COPIED!" : "COPY LINK"}
-                          </button>
-                          
-                          <button
-                            onClick={() => removeDownloadUrl(item.id)}
-                            disabled={deletingIds.has(item.id)}
-                            className="flex items-center justify-center w-10 h-10 bg-black border border-red-500 hover:bg-red-500 hover:text-black text-red-400 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Remove from list"
-                          >
-                            {deletingIds.has(item.id) ? (
-                              <svg
-                                className="animate-spin w-4 h-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
+                          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mb-0 sm:mb-3 ml-0 sm:ml-1">
+                            {/* Mobile: status centered on top; Desktop: status inline to the right */}
+                            <div className="w-full flex justify-center sm:justify-end mb-2 sm:mb-0 mt-2 sm:mt-0">
+                              <div className="flex items-center">
+                                {linkValidationStatus[item.id] ===
+                                "checking" ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-900/30 text-yellow-300 border border-yellow-600/30">
+                                    <svg
+                                      className="animate-spin w-3 h-3 mr-1"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                      ></circle>
+                                      <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                      ></path>
+                                    </svg>
+                                    Checking...
+                                  </span>
+                                ) : linkValidationStatus[item.id] ===
+                                  "valid" ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-900/30 text-green-300 border border-green-600/30">
+                                    <svg
+                                      className="w-3 h-3 mr-1"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                    Valid
+                                  </span>
+                                ) : linkValidationStatus[item.id] ===
+                                  "invalid" ? (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-900/30 text-red-300 border border-red-600/30">
+                                    <svg
+                                      className="w-3 h-3 mr-1"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                    Invalid
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-900/30 text-gray-400 border border-gray-600/30">
+                                    <svg
+                                      className="w-3 h-3 mr-1"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                    Unknown
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 justify-center sm:justify-end w-full sm:w-auto">
+                              <button
+                                onClick={() =>
+                                  copyToClipboard(item.downloadUrl, item.id)
+                                }
+                                className={`matrix-button flex items-center gap-2 px-4 py-2 whitespace-nowrap flex-shrink-0 ${
+                                  copiedId === item.id
+                                    ? "bg-green-600 hover:bg-green-700 text-white"
+                                    : "bg-black border-2 border-white hover:bg-white hover:text-black text-white"
+                                } transition-all duration-200 text-sm cursor-pointer`}
+                                style={{ fontFamily: "Roboto, sans-serif" }}
                               >
-                                <circle
-                                  className="opacity-25"
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
                                   stroke="currentColor"
-                                  strokeWidth="4"
-                                ></circle>
-                                <path
-                                  className="opacity-75"
-                                  fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
-                              </svg>
-                            ) : (
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                                  viewBox="0 0 24 24"
+                                >
+                                  {copiedId === item.id ? (
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  ) : (
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                    />
+                                  )}
+                                </svg>
+                                {copiedId === item.id ? "COPIED!" : "COPY LINK"}
+                              </button>
+
+                              <button
+                                onClick={() => removeDownloadUrl(item.id)}
+                                disabled={deletingIds.has(item.id)}
+                                className="flex items-center justify-center w-10 h-10 bg-black border border-red-500 hover:bg-red-500 hover:text-black text-red-400 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                                title="Remove from list"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            )}
-                          </button>
+                                {deletingIds.has(item.id) ? (
+                                  <svg
+                                    className="animate-spin w-4 h-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M6 18L18 6M6 6l12 12"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1751,9 +1804,22 @@ export default function Home() {
                 <div className="mt-6 pt-4">
                   <p
                     className="text-gray-400 text-sm text-center"
-                    style={{ fontFamily: "Roboto, sans-serif", marginBottom: "2rem" }}
+                    style={{
+                      fontFamily: "Roboto, sans-serif",
+                      marginBottom: "1.5rem",
+                    }}
                   >
                     Download links valid for 24 hours • Share securely
+                  </p>
+                  <p
+                    className="text-gray-400 text-sm text-center"
+                    style={{
+                      fontFamily: "Roboto, sans-serif",
+                      marginBottom: "2rem",
+                    }}
+                  >
+                    Be aware that simple aliases can be guessed by other people,
+                    so consider using more complex aliases for sensitive links.
                   </p>
                   <div className="flex gap-3 justify-center mt-3 flex-wrap">
                     <button
