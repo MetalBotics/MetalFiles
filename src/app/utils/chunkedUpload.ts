@@ -4,12 +4,12 @@ import { FileEncryption } from './encryption';
 export class ChunkedUpload {
   private static readonly CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
   private static readonly MAX_RETRIES = 3;
-  private static readonly CONCURRENCY = 3;
 
   static async uploadFileInChunks(
     file: File,
     onProgress?: (progress: number) => void,
-    alias?: string
+    alias?: string,
+    concurrency?: number
   ): Promise<any> {
     try {
       const { key, iv, salt, encryptedStream, totalChunks } =
@@ -45,6 +45,14 @@ export class ChunkedUpload {
       const { uploadId } = await sessionResponse.json();
       console.log('Upload session started:', uploadId);
 
+      // Determine how many chunks to upload in parallel.
+      // Defaults to the browser's hardwareConcurrency, allowing the
+      // transfer to use all available cores. Higher concurrency can
+      // improve throughput but increases memory and network pressure.
+      const runtimeConcurrency = Math.max(
+        1,
+        concurrency ?? navigator?.hardwareConcurrency ?? 3
+      );
 
       const activeUploads = new Set<Promise<void>>();
       let chunkIndex = 0;
@@ -70,27 +78,15 @@ export class ChunkedUpload {
           })
           .finally(() => activeUploads.delete(task));
 
-        if (activeUploads.size >= this.CONCURRENCY) {
+        if (activeUploads.size >= runtimeConcurrency) {
           await Promise.race(activeUploads);
         }
       }
 
       await Promise.all(activeUploads);
 
-      // Complete upload
-      const completeResponse = await fetch('/api/upload/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uploadId, alias })
-      });
-
-      if (!completeResponse.ok) {
-        console.error('Failed to complete upload');
-        throw new Error('Failed to complete upload');
-      }
-
-
-      return await completeResponse.json();
+      // Complete upload with retries to handle transient server errors.
+      return await this.completeUploadWithRetry(uploadId, alias);
     } catch (error) {
       console.error('Chunked upload failed:', error);
       throw error;
@@ -143,6 +139,35 @@ export class ChunkedUpload {
           onProgress,
           retryCount + 1
         );
+      }
+      throw error;
+    }
+  }
+
+  private static async completeUploadWithRetry(
+    uploadId: string,
+    alias?: string,
+    retryCount = 0
+  ): Promise<any> {
+    try {
+      const response = await fetch('/api/upload/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uploadId, alias })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to complete upload');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error completing upload:', error);
+      if (retryCount < this.MAX_RETRIES) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * (retryCount + 1))
+        );
+        return this.completeUploadWithRetry(uploadId, alias, retryCount + 1);
       }
       throw error;
     }

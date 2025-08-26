@@ -468,7 +468,10 @@ export default function Home() {
                   ...prev,
                   [fileKey]: progress,
                 }));
-              }
+              },
+              // Use all available hardware threads for parallel chunk uploads
+              undefined,
+              navigator.hardwareConcurrency || 3
             );
           } else {
             console.log(
