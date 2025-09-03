@@ -12,7 +12,8 @@ async function decryptFile(
   encryptedBuffer: Buffer,
   password: string,
   iv: string,
-  salt: string
+  salt: string,
+  originalSize: number
 ): Promise<Buffer> {
   try {
     console.log('Decryption parameters:', { 
@@ -54,26 +55,39 @@ async function decryptFile(
     const keyBuffer = crypto.pbkdf2Sync(password, saltBuffer, 100000, 32, 'sha256');
     console.log('Key derived, length:', keyBuffer.length);
     
-    // Create decipher for AES-256-GCM
-    const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuffer, ivBuffer);
-    
-    // For AES-GCM, the auth tag is appended to the encrypted data
-    // Extract the auth tag (last 16 bytes) and the encrypted data
-    const authTag = encryptedBuffer.slice(-16);
-    const encryptedData = encryptedBuffer.slice(0, -16);
-    
-    console.log('Auth tag length:', authTag.length, 'Encrypted data length:', encryptedData.length);
-    
-    decipher.setAuthTag(authTag);
-    
-    // Decrypt the data
-    const decrypted = Buffer.concat([
-      decipher.update(encryptedData),
-      decipher.final()
-    ]);
-    
-    console.log('Decryption successful, decrypted length:', decrypted.length);
-    return decrypted;
+    // The client encrypts each chunk separately using the same IV/key pair
+    // and appends the 16-byte auth tag to each chunk. Reconstruct the
+    // original file by decrypting each chunk individually and concatenating
+    // the results.
+    const CHUNK_SIZE = 5 * 1024 * 1024; // Must match client-side chunk size
+    const decryptedChunks: Buffer[] = [];
+    let offset = 0;
+    let processed = 0;
+
+    while (processed < originalSize) {
+      const currentChunkSize = Math.min(CHUNK_SIZE, originalSize - processed);
+      const encryptedChunkLength = currentChunkSize + 16; // ciphertext + auth tag
+      const chunk = encryptedBuffer.slice(offset, offset + encryptedChunkLength);
+
+      const authTag = chunk.slice(-16);
+      const encryptedData = chunk.slice(0, -16);
+
+      const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuffer, ivBuffer);
+      decipher.setAuthTag(authTag);
+
+      const decrypted = Buffer.concat([
+        decipher.update(encryptedData),
+        decipher.final()
+      ]);
+
+      decryptedChunks.push(decrypted);
+      offset += encryptedChunkLength;
+      processed += currentChunkSize;
+    }
+
+    const finalBuffer = Buffer.concat(decryptedChunks);
+    console.log('Decryption successful, decrypted length:', finalBuffer.length);
+    return finalBuffer;
       } catch (error) {
     console.error('Server-side decryption error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -161,7 +175,8 @@ export async function GET(
         encryptedBuffer,
         tokenData.encryptionKey,
         tokenData.iv,
-        tokenData.salt
+        tokenData.salt,
+        tokenData.size
       );
       
       // Delete the token after successful download (one-time use)

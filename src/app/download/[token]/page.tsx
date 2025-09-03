@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import { FileEncryption } from "../../utils/encryption";
 
 interface FileInfo {
   originalName: string;
@@ -106,47 +105,16 @@ export default function DownloadPage() {
 
       setDownloadProgress(30); // Response received
 
-      // Get encrypted data and decryption info from response
-      const encryptedData = await response.arrayBuffer();
-      setDownloadProgress(60); // Data downloaded
+      // Get file data from response
+      const fileData = await response.arrayBuffer();
+      setDownloadProgress(80); // Data downloaded
 
-      const encryptionKey = response.headers.get("X-Encryption-Key");
-      const iv = response.headers.get("X-IV");
-      const salt = response.headers.get("X-Salt");
       const originalName = decodeURIComponent(
         response.headers.get("X-Original-Name") || "download"
       );
 
-      if (!encryptionKey || !iv || !salt) {
-        throw new Error("Missing decryption metadata");
-      }
-
-      setDownloadProgress(70); // Starting decryption
-
-      // Decode base64 encoded IV and salt
-      const ivArray = new Uint8Array(
-        atob(iv)
-          .split("")
-          .map((c) => c.charCodeAt(0))
-      );
-      const saltArray = new Uint8Array(
-        atob(salt)
-          .split("")
-          .map((c) => c.charCodeAt(0))
-      );
-
-      // Decrypt the file client-side
-      const decryptedData = await FileEncryption.decryptFile(
-        encryptedData,
-        encryptionKey,
-        ivArray,
-        saltArray
-      );
-
-      setDownloadProgress(90); // Decryption complete
-
-      // Create blob and download the decrypted file
-      const blob = new Blob([decryptedData]);
+      // Create blob and download the file
+      const blob = new Blob([fileData]);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
