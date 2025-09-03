@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createReadStream, existsSync, statSync } from 'fs';
-import { unlink } from 'fs/promises';
+import { existsSync, statSync } from 'fs';
+import { readFile, unlink } from 'fs/promises';
 import { join } from 'path';
+import crypto from 'crypto';
 import { downloadTokens } from '../../tokenStorage';
 import { aliases, normalizeAlias } from '../../aliasStorage';
 import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
@@ -9,6 +10,56 @@ import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
 // Configure for large file downloads
 export const runtime = 'nodejs';
 export const maxDuration = 900; // 15 minutes for very large downloads (up to 10GB)
+
+// Server-side decryption function using Node.js crypto
+async function decryptFile(
+  encryptedBuffer: Buffer,
+  password: string,
+  iv: string,
+  salt: string,
+  originalSize: number
+): Promise<Buffer> {
+  try {
+    // Convert base64 strings back to buffers (client uses btoa which is base64)
+    const ivBuffer = Buffer.from(iv, 'base64');
+    const saltBuffer = Buffer.from(salt, 'base64');
+
+    // Derive key from password using PBKDF2
+    const keyBuffer = crypto.pbkdf2Sync(password, saltBuffer, 100000, 32, 'sha256');
+
+    // Decrypt each chunk individually and concatenate
+    const CHUNK_SIZE = 5 * 1024 * 1024; // Must match client chunk size
+    const decryptedChunks: Buffer[] = [];
+    let offset = 0;
+    let processed = 0;
+
+    while (processed < originalSize) {
+      const currentChunkSize = Math.min(CHUNK_SIZE, originalSize - processed);
+      const encryptedChunkLength = currentChunkSize + 16; // ciphertext + auth tag
+      const chunk = encryptedBuffer.slice(offset, offset + encryptedChunkLength);
+
+      const authTag = chunk.slice(-16);
+      const encryptedData = chunk.slice(0, -16);
+
+      const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuffer, ivBuffer);
+      decipher.setAuthTag(authTag);
+
+      const decrypted = Buffer.concat([
+        decipher.update(encryptedData),
+        decipher.final()
+      ]);
+
+      decryptedChunks.push(decrypted);
+      offset += encryptedChunkLength;
+      processed += currentChunkSize;
+    }
+
+    return Buffer.concat(decryptedChunks);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to decrypt file on server: ${message}`);
+  }
+}
 
 export async function GET(
   request: NextRequest,
@@ -73,38 +124,45 @@ export async function GET(
     // Build file path
     const uploadsDir = join(process.cwd(), 'uploads');
     const filePath = join(uploadsDir, tokenData.filename);
-    
+
     // Check if file exists
     if (!existsSync(filePath)) {
       return NextResponse.json(
-        { error: 'File not found on server' }, 
+        { error: 'File not found on server' },
         { status: 404 }
       );
-    }    try {
-      // Get file stats for content length
+    }
+
+    try {
+      // Get file stats for logging purposes
       const stats = statSync(filePath);
-      
-      // Use dynamic import for readFile to handle the missing import
-      const { readFile } = await import('fs/promises');
-      
-      // For very large files (>1GB), we should consider additional optimizations
-      if (stats.size > 1024 * 1024 * 1024) { // 1GB threshold
-        console.log(`Serving large file: ${tokenData.originalName}, Size: ${(stats.size / 1024 / 1024 / 1024).toFixed(2)}GB`);
+      if (stats.size > 1024 * 1024 * 1024) {
+        console.log(
+          `Serving large file: ${tokenData.originalName}, Size: ${(stats.size / 1024 / 1024 / 1024).toFixed(2)}GB`
+        );
       }
-      
-      // Read the encrypted file
-      const encryptedFileBuffer = await readFile(filePath);
-        // Return encrypted file as binary data with metadata in headers
-      const response = new NextResponse(new Uint8Array(encryptedFileBuffer), {
+
+      // Read and decrypt the file on the server
+      const encryptedBuffer = await readFile(filePath);
+      const decryptedBuffer = await decryptFile(
+        encryptedBuffer,
+        tokenData.encryptionKey,
+        tokenData.iv,
+        tokenData.salt,
+        tokenData.size
+      );
+
+      // Prepare response headers
+      const fileExtension = tokenData.originalName.split('.').pop()?.toLowerCase();
+      const mimeType = getMimeType(fileExtension);
+
+      const response = new NextResponse(new Uint8Array(decryptedBuffer), {
         status: 200,
         headers: {
-          'Content-Type': 'application/octet-stream',
-          'Content-Length': encryptedFileBuffer.length.toString(),
-          'X-Encryption-Key': tokenData.encryptionKey,
-          'X-IV': tokenData.iv,
-          'X-Salt': tokenData.salt,
+          'Content-Type': mimeType,
+          'Content-Disposition': `attachment; filename="${tokenData.originalName}"`,
+          'Content-Length': decryptedBuffer.length.toString(),
           'X-Original-Name': encodeURIComponent(tokenData.originalName),
-          'X-Original-Size': tokenData.size.toString(),
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0',
@@ -113,30 +171,27 @@ export async function GET(
           'X-RateLimit-Reset': new Date(rateLimit.resetTime || Date.now() + 60000).toISOString()
         }
       });
-      
-      console.log(`Encrypted file served: ${tokenData.originalName}, Size: ${encryptedFileBuffer.length} bytes`);
-      
-      // Delete the encrypted file from server after successful serving
+
+      // Delete the decrypted file and token after serving
       try {
         await unlink(filePath);
-        console.log(`Encrypted file deleted from server: ${tokenData.filename}`);
+        console.log(`Physical file deleted: ${tokenData.filename}`);
       } catch (deleteError) {
-        console.error('Error deleting encrypted file from server:', deleteError);
-        // Don't fail the response if file deletion fails
+        console.error('Error deleting physical file:', deleteError);
       }
-        // Remove token from storage since file is served and deleted
+
       await downloadTokens.delete(resolvedToken);
       if (usedAlias) {
         await aliases.delete(normalizeAlias(token));
       }
       console.log(`Token removed: ${resolvedToken}`);
-      
+
       return response;
-      
+
     } catch (fileError) {
-      console.error('Error reading encrypted file:', fileError);
+      console.error('Error serving decrypted file:', fileError);
       return NextResponse.json(
-        { error: 'Error reading encrypted file from disk' }, 
+        { error: 'Failed to decrypt file' },
         { status: 500 }
       );
     }
@@ -148,4 +203,25 @@ export async function GET(
       { status: 500 }
     );
   }
+}
+
+function getMimeType(extension?: string): string {
+  const mimeTypes: { [key: string]: string } = {
+    pdf: 'application/pdf',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    txt: 'text/plain',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    zip: 'application/zip',
+    rar: 'application/x-rar-compressed',
+    mp4: 'video/mp4',
+    mp3: 'audio/mpeg',
+    json: 'application/json',
+    xml: 'application/xml'
+  };
+
+  return mimeTypes[extension || ''] || 'application/octet-stream';
 }
