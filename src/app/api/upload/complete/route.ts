@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
     const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
 
     // Store token with file info
+    const sessionAny: any = session;
     await downloadTokens.set(downloadToken, {
       filename,
       originalName: session.originalName,
@@ -68,7 +69,9 @@ export async function POST(request: NextRequest) {
       encryptionKey: session.encryptionKey,
       iv: Buffer.from(session.iv).toString('base64'),
       salt: Buffer.from(session.salt).toString('base64'),
-      metadataIv: session.metadataIv
+      metadataIv: session.metadataIv,
+      // Preserve optional password fields if present on session
+      ...(sessionAny.pwSalt && sessionAny.pwVerifier ? { pwSalt: sessionAny.pwSalt, pwVerifier: sessionAny.pwVerifier } : {})
     });
 
     // Generate download URL

@@ -14,6 +14,9 @@ export interface TokenData {
   iv: string; // base64 encoded
   salt: string; // base64 encoded
   metadataIv: string; // base64 encoded
+  // Optional password protection
+  pwSalt?: string; // base64 encoded
+  pwVerifier?: string; // base64 encoded verifier
 }
 
 // In-memory cache

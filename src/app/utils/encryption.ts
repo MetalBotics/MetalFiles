@@ -165,6 +165,17 @@ export class FileEncryption {  public static isCryptoAvailable(): boolean {
     return { encryptedMetadata, iv };
   }
 
+  // Derive a raw key from a password and return it as base64 (used as a verifier)
+  public static async deriveRawKeyBase64(password: string, salt: Uint8Array): Promise<string> {
+    this.ensureCryptoAvailable();
+    const cryptoKey = await this.deriveKeyFromPassword(password, salt);
+    const raw = await window.crypto.subtle.exportKey('raw', cryptoKey);
+    const arr = new Uint8Array(raw);
+    let str = '';
+    for (let i = 0; i < arr.length; i++) str += String.fromCharCode(arr[i]);
+    return btoa(str);
+  }
+
   public static async decryptMetadata(
     encryptedMetadata: ArrayBuffer,
     key: string,

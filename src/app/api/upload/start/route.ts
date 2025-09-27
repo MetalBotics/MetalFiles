@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
       iv,
       salt,
       metadataIv
+      , pwSalt, pwVerifier
     } = requestData;
 
     console.log('Session start request:', {
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
       iv,
       salt,
       metadataIv
+      , pwSalt, pwVerifier
     });
 
     console.log('Session created successfully:', uploadId);

@@ -113,6 +113,9 @@ export default function Home() {
   const [aliasErrors, setAliasErrors] = useState<{
     [id: string]: string | null;
   }>({});
+  const [passwordInputs, setPasswordInputs] = useState<{
+    [id: string]: string;
+  }>({});
   const [isClearing, setIsClearing] = useState(false);
   const [showFileRestoreNotice, setShowFileRestoreNotice] = useState(false);
   const [linkValidationStatus, setLinkValidationStatus] = useState<{
@@ -334,6 +337,22 @@ export default function Home() {
 
     // Replace selected files instead of appending
     setSelectedFiles(fileArray);
+    // Reset upload status/progress/password inputs for the newly selected files
+    // so re-selecting the same file doesn't show stale "Uploaded" state
+    const newStatusUpdates: {
+      [key: string]: "pending" | "uploading" | "success" | "error";
+    } = {};
+    const newProgressUpdates: { [key: string]: number } = {};
+    const newPasswordInputs: { [id: string]: string } = {};
+    fileArray.forEach((file, idx) => {
+      const key = `${file.name}-${idx}`;
+      newStatusUpdates[key] = "pending";
+      newProgressUpdates[key] = 0;
+      newPasswordInputs[key] = "";
+    });
+    setUploadStatus((prev) => ({ ...prev, ...newStatusUpdates }));
+    setUploadProgress((prev) => ({ ...prev, ...newProgressUpdates }));
+    setPasswordInputs((prev) => ({ ...prev, ...newPasswordInputs }));
     console.log(
       "Files after selection:",
       fileArray.map((f) => f.name)
@@ -394,6 +413,23 @@ export default function Home() {
 
     // Clear related state
     setChunkedFiles((prev) => {
+      const updated = { ...prev };
+      delete updated[fileKey];
+      return updated;
+    });
+
+    // Remove upload status/progress/password input for the removed file
+    setUploadStatus((prev) => {
+      const updated = { ...prev };
+      delete updated[fileKey];
+      return updated;
+    });
+    setUploadProgress((prev) => {
+      const updated = { ...prev };
+      delete updated[fileKey];
+      return updated;
+    });
+    setPasswordInputs((prev) => {
       const updated = { ...prev };
       delete updated[fileKey];
       return updated;
@@ -541,6 +577,25 @@ export default function Home() {
             ); // Use same IV for now
             formData.append("originalName", file.name);
             formData.append("originalSize", file.size.toString());
+            // If user provided a per-file password, include derived verifier fields
+            const pw = passwordInputs[fileKey];
+            if (pw && pw.length > 0) {
+              try {
+                const saltArr = encryptionResult.salt;
+                const verifier = await FileEncryption.deriveRawKeyBase64(
+                  pw,
+                  saltArr
+                );
+                formData.append("passwordProtected", "true");
+                formData.append(
+                  "pwSalt",
+                  btoa(String.fromCharCode(...saltArr))
+                );
+                formData.append("pwVerifier", verifier);
+              } catch (err) {
+                console.error("Error deriving password verifier:", err);
+              }
+            }
 
             console.log("FormData prepared, sending to server...");
             setUploadProgress((prev) => ({ ...prev, [fileKey]: 90 }));
@@ -870,7 +925,11 @@ export default function Home() {
             }
           }
         } catch (error) {
-          console.error(`Error deleting file with token ${token}:`, error);
+          console.warn(
+            `Error deleting file with token ${token}: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
           return {
             success: false,
             token,
@@ -1402,6 +1461,27 @@ export default function Home() {
                                 </div>
                               )}
                             </div>
+                            {/* Optional per-file password input (only when pending) */}
+                            {status === "pending" && (
+                              <div className="mt-2 sm:mt-0">
+                                <input
+                                  type="password"
+                                  placeholder="Optional Password"
+                                  value={passwordInputs[fileKey] || ""}
+                                  onChange={(e) =>
+                                    setPasswordInputs((prev) => ({
+                                      ...prev,
+                                      [fileKey]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full sm:w-64 px-2 py-1 bg-black border border-gray-600 text-gray-200 placeholder-gray-500 focus:outline-none text-sm"
+                                  spellCheck={false}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Leave empty for no password
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -1518,6 +1598,11 @@ export default function Home() {
                       console.log("=== CLEAR ALL FILES ===");
                       setSelectedFiles([]);
                       setChunkedFiles({});
+                      // Also clear upload-related transient state so re-adding
+                      // the same file starts fresh and allows updating password
+                      setUploadStatus({});
+                      setUploadProgress({});
+                      setPasswordInputs({});
                       // Clear the file input to prevent caching issues
                       if (fileInputRef.current) {
                         fileInputRef.current.value = "";
@@ -2036,12 +2121,13 @@ export default function Home() {
                 <div className="bg-gray-900 border border-green-300/80 p-4 mb-4">
                   <code className="text-green-400 text-sm block break-all">
                     wget --content-disposition
-                    "https://metalfiles.tech/api/download/[token]"
+                    "https://metalfiles.tech/api/download/[TOKEN]?password=[PASS]"
                   </code>
                 </div>
                 <p className="text-gray-400 text-sm">
                   Replace <span className="text-white">[TOKEN]</span> with your
-                  download token <br />
+                  download token or alias.
+                  <br />
                   The <span className="text-white">
                     --CONTENT-DISPOSITION
                   </span>{" "}
@@ -2069,12 +2155,17 @@ export default function Home() {
                 </h3>
                 <div className="bg-gray-900 border border-green-300/80 p-4 mb-4">
                   <code className="text-green-400 text-sm block break-all">
-                    curl -OJ "https://metalfiles.tech/api/download/[token]"
+                    curl -OJ
+                    "https://metalfiles.tech/api/download/[TOKEN]?password=[PASS]"
                   </code>
                 </div>
                 <p className="text-gray-400 text-sm">
                   The <span className="text-white">-OJ</span> flag save the file
                   with its original name and follow redirects.
+                </p>
+                <p className="text-gray-400 text-sm">
+                  Use <span className="text-white">?password</span> parameter if
+                  the file has a password.
                 </p>
               </div>
             </div>

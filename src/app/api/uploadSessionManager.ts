@@ -12,6 +12,9 @@ interface UploadSession {
   iv: number[];
   salt: number[];
   metadataIv: string;
+  // Optional password fields forwarded from client
+  pwSalt?: string;
+  pwVerifier?: string;
   chunks: Map<number, Buffer>;
   createdAt: number;
 }

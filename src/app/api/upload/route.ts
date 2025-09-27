@@ -99,6 +99,9 @@ export async function POST(request: NextRequest) {
     const originalName = data.get('originalName') as string;
     const originalSize = parseInt(data.get('originalSize') as string);
     const requestedAliasRaw = (data.get('alias') as string) || '';
+  const passwordProtected = (data.get('passwordProtected') as string) === 'true';
+  const pwSalt = (data.get('pwSalt') as string) || undefined;
+  const pwVerifier = (data.get('pwVerifier') as string) || undefined;
 
     console.log('Parsed data:', {
       encryptedFile: !!encryptedFile,
@@ -203,7 +206,11 @@ export async function POST(request: NextRequest) {
       encryptionKey,
       iv,
       salt,
-      metadataIv
+      metadataIv,
+      // Optional password protection fields
+      ...(passwordProtected && pwSalt && pwVerifier
+        ? { pwSalt, pwVerifier }
+        : {})
     });
     console.log('Token stored:', downloadToken);
     console.log('Token data:', { filename, originalName, size: originalSize, expiresAt });
