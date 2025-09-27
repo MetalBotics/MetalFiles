@@ -157,6 +157,39 @@ export async function GET(
       );
     }
     
+    // If this token is password-protected, require the client to supply a password
+    const tokenAny: any = tokenData;
+    if (tokenAny.pwVerifier) {
+      // Prefer header, but accept query param ?password= for direct API links
+      let providedPw = request.headers.get('x-download-password') || '';
+      if (!providedPw) {
+        try {
+          const url = new URL(request.url);
+          providedPw = url.searchParams.get('password') || '';
+        } catch (e) {
+          // ignore URL parse errors and fall through
+        }
+      }
+
+      if (!providedPw) {
+        return NextResponse.json({ error: 'Password required for this download' }, { status: 401 });
+      }
+
+      try {
+        // Derive key buffer from provided password using salt
+        const saltBuffer = Buffer.from(tokenAny.pwSalt, 'base64');
+        const keyBuffer = crypto.pbkdf2Sync(providedPw, saltBuffer, 100000, 32, 'sha256');
+        // Export derived key raw and compare base64
+        const providedBase64 = keyBuffer.toString('base64');
+        if (providedBase64 !== tokenAny.pwVerifier) {
+          return NextResponse.json({ error: 'Invalid password' }, { status: 403 });
+        }
+      } catch (err) {
+        console.error('Error verifying password for token:', err);
+        return NextResponse.json({ error: 'Invalid password' }, { status: 403 });
+      }
+    }
+
     // Check if file exists
     const filePath = join(process.cwd(), 'uploads', tokenData.filename);
     
@@ -199,11 +232,18 @@ export async function GET(
       const fileExtension = tokenData.originalName.split('.').pop()?.toLowerCase();
       const mimeType = getMimeType(fileExtension);
         // Return the decrypted file with correct headers
+      // Build a robust Content-Disposition with filename* (RFC 5987) so curl -OJ
+      // and browsers can correctly extract UTF-8 filenames and extensions.
+      const encodedName = encodeURIComponent(tokenData.originalName);
+      const contentDisposition = `attachment; filename="${tokenData.originalName}"; filename*=UTF-8''${encodedName}`;
+
       return new NextResponse(new Uint8Array(decryptedBuffer), {
         status: 200,
         headers: {
           'Content-Type': mimeType,
-          'Content-Disposition': `attachment; filename="${tokenData.originalName}"`,
+          'Content-Disposition': contentDisposition,
+          // X-Original-Name left as plain original name for clients that prefer it
+          'X-Original-Name': tokenData.originalName,
           'Content-Length': decryptedBuffer.length.toString(),
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',

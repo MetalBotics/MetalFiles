@@ -10,14 +10,19 @@ interface FileInfo {
   size: number;
   expiresAt: string;
   isValid: boolean;
+  passwordProtected?: boolean;
 }
 
 export default function DownloadPage() {
   const params = useParams();
   const token = params.token as string;
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
+  const [downloadPassword, setDownloadPassword] = useState("");
   const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
@@ -35,17 +40,37 @@ export default function DownloadPage() {
   };
 
   const fetchFileInfo = async (retryCount = 0) => {
+    // Prevent concurrent refreshes from issuing multiple requests
+    if (fetching) return;
+    setFetching(true);
     try {
       const response = await fetch(`/api/file-info/${token}`);
       const data = await response.json();
 
       if (response.ok) {
         setFileInfo(data);
-        setError(null); // Clear any previous errors
+        setError(null); // Clear any previous permanent errors
+        setRateLimitMessage(null); // Clear any rate-limit message on success
+        setPasswordError(null); // Clear any previous password errors when file info successfully loads
       } else {
         // For 404 or 410 (expired), don't retry and show user-friendly message
         if (response.status === 404 || response.status === 410) {
           setError("The download link is invalid or has expired.");
+          setLoading(false);
+          return;
+        }
+
+        // If we're being rate limited, surface that to the user instead of
+        // marking the token invalid. Respect Retry-After header when available.
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After');
+          const waitSeconds = retryAfter ? parseInt(retryAfter, 10) : undefined;
+          setRateLimitMessage(
+            waitSeconds
+              ? `Too many requests. Try again in ${waitSeconds} seconds.`
+              : 'Too many requests. Please wait a moment and try again.'
+          );
+          setError(null);
           setLoading(false);
           return;
         }
@@ -70,6 +95,7 @@ export default function DownloadPage() {
       // After retry, show user-friendly message
       setError("The download link is invalid or has expired.");
     } finally {
+      setFetching(false);
       // Only set loading to false if we're not going to retry
       if (retryCount >= 1 || !error) {
         setLoading(false);
@@ -83,9 +109,45 @@ export default function DownloadPage() {
     setDownloadProgress(0);
     try {
       setDownloadProgress(10); // Starting download
-      const response = await fetch(`/api/file/${token}`);
+      const headers: any = {};
+      if (fileInfo && (fileInfo as any).passwordProtected) {
+        // Clear any previous password errors
+        setPasswordError(null);
+        if (!downloadPassword || downloadPassword.length === 0) {
+          setPasswordError("Password required");
+          setDownloading(false);
+          return;
+        }
+        headers["x-download-password"] = downloadPassword;
+      }
+
+      const response = await fetch(`/api/file/${token}`, { headers });
 
       if (!response.ok) {
+        // Try to parse response JSON to get a server-provided message
+        let errorBody: any = null;
+        try {
+          errorBody = await response.json();
+        } catch (e) {
+          // ignore parse errors
+        }
+
+        // Password-related responses: show inline message and don't navigate to File Not Found
+        if (response.status === 401) {
+          setPasswordError(
+            (errorBody && errorBody.error) || "Password required"
+          );
+          setDownloading(false);
+          return;
+        }
+        if (response.status === 403) {
+          setPasswordError(
+            (errorBody && errorBody.error) || "Incorrect password"
+          );
+          setDownloading(false);
+          return;
+        }
+
         // For 404 or 410 (expired), don't retry and show user-friendly message
         if (response.status === 404 || response.status === 410) {
           throw new Error("The download link is invalid or has expired.");
@@ -126,6 +188,18 @@ export default function DownloadPage() {
 
       setDownloadProgress(100); // Complete
     } catch (err) {
+      // If handler threw a password-specific error string, show inline password message
+      if (err instanceof Error && err.message === "Password required") {
+        setPasswordError("Password required");
+        setDownloading(false);
+        return;
+      }
+      if (err instanceof Error && err.message === "Invalid password") {
+        setPasswordError("Incorrect password");
+        setDownloading(false);
+        return;
+      }
+
       // For token-related errors, show consistent message
       if (
         err instanceof Error &&
@@ -342,6 +416,16 @@ export default function DownloadPage() {
                       </svg>
                       Valid
                     </span>
+                    <button
+                      onClick={() => {
+                        if (!fetching) fetchFileInfo();
+                      }}
+                      disabled={fetching}
+                      title={fetching ? 'Refreshing...' : 'Refresh status'}
+                      className={`ml-2 text-xs px-2 py-1 border rounded ${fetching ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700/20'}`}
+                    >
+                      {fetching ? 'Refreshing...' : 'Refresh'}
+                    </button>
                   </div>
                 </div>
                 <div
@@ -351,10 +435,27 @@ export default function DownloadPage() {
                   <strong>Expires:</strong>{" "}
                   {new Date(fileInfo.expiresAt).toLocaleString()}
                 </div>
+                {rateLimitMessage && (
+                  <div className="mt-3 text-yellow-300 text-sm">
+                    {rateLimitMessage}
+                  </div>
+                )}
               </div>
 
               {/* Download Button */}
               <div className="text-center">
+                {fileInfo && (fileInfo as any).passwordProtected && (
+                  <div className="mb-4">
+                    <input
+                      type="password"
+                      placeholder="Enter password to decrypt"
+                      value={downloadPassword}
+                      onChange={(e) => setDownloadPassword(e.target.value)}
+                      className="w-full px-3 py-2 bg-black border border-gray-600 text-gray-200 placeholder-gray-500 focus:outline-none mb-2"
+                    />
+                    {/* password errors are shown below the Download button to avoid duplication */}
+                  </div>
+                )}
                 <button
                   onClick={() => handleDownload()}
                   disabled={downloading}
@@ -409,6 +510,16 @@ export default function DownloadPage() {
                     </>
                   )}
                 </button>
+
+                {/* Show password error below the button as well so users see it even
+                    if the password input block isn't rendered for some reason */}
+                {passwordError && (
+                  <div className="mt-4 text-center">
+                    <div className="inline-block bg-red-900/20 border border-red-600/30 text-red-300 px-3 py-2 rounded">
+                      {passwordError}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Error Display */}

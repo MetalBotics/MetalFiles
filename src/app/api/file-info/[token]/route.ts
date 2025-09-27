@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { downloadTokens } from '../../tokenStorage';
 import { aliases, normalizeAlias } from '../../aliasStorage';
-import { apiRateLimiter, checkRateLimit } from '../../rateLimiter';
+import { apiRateLimiter, checkRateLimit, infoRateLimiter } from '../../rateLimiter';
 
 export async function GET(
   request: NextRequest,
@@ -9,8 +9,8 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
-      // Check rate limit (shared API rate limiter)
-    const rateLimit = checkRateLimit(apiRateLimiter, request);
+    // Check rate limit with a permissive limiter for status/info checks
+    const rateLimit = checkRateLimit(infoRateLimiter, request);
     
     if (!rateLimit.allowed) {
       const retryAfter = rateLimit.retryAfter || 60;
@@ -67,14 +67,15 @@ export async function GET(
       );
     }
       // Return file information
-    return NextResponse.json({
-      originalName: tokenData.originalName,
-      size: tokenData.size,
-      expiresAt: new Date(tokenData.expiresAt).toISOString(),
-      isValid: true
-    }, {
+      return NextResponse.json({
+        originalName: tokenData.originalName,
+        size: tokenData.size,
+        expiresAt: new Date(tokenData.expiresAt).toISOString(),
+        isValid: true,
+        passwordProtected: !!(tokenData as any).pwVerifier
+      }, {
       headers: {
-        'X-RateLimit-Limit': '5',
+        'X-RateLimit-Limit': '30',
         'X-RateLimit-Remaining': rateLimit.remaining?.toString() || '0',
         'X-RateLimit-Reset': new Date(rateLimit.resetTime || Date.now() + 60000).toISOString()
       }

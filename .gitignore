@@ -9,6 +9,10 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+aliases.json
+/uploads
+tokens.json
+*.nginx
 
 # testing
 /coverage

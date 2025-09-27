@@ -34,6 +34,7 @@ export class ChunkedUpload {
           iv: Array.from(iv),
           salt: Array.from(salt),
           metadataIv: btoa(String.fromCharCode(...iv))
+          // Note: per-file password fields may be added via optional parameters in future
         })
       });
 
