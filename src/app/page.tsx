@@ -339,7 +339,9 @@ export default function Home() {
     setSelectedFiles(fileArray);
     // Reset upload status/progress/password inputs for the newly selected files
     // so re-selecting the same file doesn't show stale "Uploaded" state
-    const newStatusUpdates: { [key: string]: "pending" | "uploading" | "success" | "error" } = {};
+    const newStatusUpdates: {
+      [key: string]: "pending" | "uploading" | "success" | "error";
+    } = {};
     const newProgressUpdates: { [key: string]: number } = {};
     const newPasswordInputs: { [id: string]: string } = {};
     fileArray.forEach((file, idx) => {
@@ -923,7 +925,11 @@ export default function Home() {
             }
           }
         } catch (error) {
-          console.warn(`Error deleting file with token ${token}: ${error instanceof Error ? error.message : String(error)}`);
+          console.warn(
+            `Error deleting file with token ${token}: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
           return {
             success: false,
             token,
@@ -2115,12 +2121,13 @@ export default function Home() {
                 <div className="bg-gray-900 border border-green-300/80 p-4 mb-4">
                   <code className="text-green-400 text-sm block break-all">
                     wget --content-disposition
-                    "https://metalfiles.tech/api/download/[token]"
+                    "https://metalfiles.tech/api/download/[TOKEN]?password=[PASS]"
                   </code>
                 </div>
                 <p className="text-gray-400 text-sm">
                   Replace <span className="text-white">[TOKEN]</span> with your
-                  download token <br />
+                  download token or alias.
+                  <br />
                   The <span className="text-white">
                     --CONTENT-DISPOSITION
                   </span>{" "}
@@ -2148,12 +2155,17 @@ export default function Home() {
                 </h3>
                 <div className="bg-gray-900 border border-green-300/80 p-4 mb-4">
                   <code className="text-green-400 text-sm block break-all">
-                    curl -OJ "https://metalfiles.tech/api/download/[token]"
+                    curl -OJ
+                    "https://metalfiles.tech/api/download/[TOKEN]?password=[PASS]"
                   </code>
                 </div>
                 <p className="text-gray-400 text-sm">
                   The <span className="text-white">-OJ</span> flag save the file
                   with its original name and follow redirects.
+                </p>
+                <p className="text-gray-400 text-sm">
+                  Use <span className="text-white">?password</span> parameter if
+                  the file has a password.
                 </p>
               </div>
             </div>

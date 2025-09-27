@@ -79,6 +79,8 @@ export async function GET(
         { 
           status: 429,
           headers: {
+            'Content-Type': 'application/json',
+            'Content-Disposition': `attachment; filename="error.json"; filename*=UTF-8''error.json`,
             'Retry-After': retryAfter.toString(),
             'X-RateLimit-Limit': '5',
             'X-RateLimit-Remaining': '0'
@@ -105,7 +107,7 @@ export async function GET(
     if (!tokenData) {
       return NextResponse.json(
         { error: 'Invalid download token' }, 
-        { status: 404 }
+        { status: 404, headers: { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="error.json"; filename*=UTF-8''error.json` } }
       );
     }
     
@@ -117,7 +119,7 @@ export async function GET(
       }
       return NextResponse.json(
         { error: 'Download token has expired' }, 
-        { status: 410 }
+        { status: 410, headers: { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="error.json"; filename*=UTF-8''error.json` } }
       );
     }
     
@@ -129,7 +131,7 @@ export async function GET(
     if (!existsSync(filePath)) {
       return NextResponse.json(
         { error: 'File not found on server' },
-        { status: 404 }
+        { status: 404, headers: { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="error.json"; filename*=UTF-8''error.json` } }
       );
     }
 
@@ -149,7 +151,7 @@ export async function GET(
       }
 
       if (!providedPw) {
-        return NextResponse.json({ error: 'Password required for this download' }, { status: 400 });
+        return NextResponse.json({ error: 'Password required for this download' }, { status: 400, headers: { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="error.json"; filename*=UTF-8''error.json` } });
       }
 
       // Strip surrounding quotes if provided like ?password="1234"
@@ -160,11 +162,11 @@ export async function GET(
         const keyBuffer = crypto.pbkdf2Sync(providedPw, saltBuffer, 100000, 32, 'sha256');
         const providedBase64 = keyBuffer.toString('base64');
         if (providedBase64 !== tokenAny.pwVerifier) {
-          return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
+          return NextResponse.json({ error: 'Invalid password' }, { status: 400, headers: { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="error.json"; filename*=UTF-8''error.json` } });
         }
       } catch (err) {
         console.error('Error verifying password for token:', err);
-        return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
+        return NextResponse.json({ error: 'Invalid password' }, { status: 400, headers: { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="error.json"; filename*=UTF-8''error.json` } });
       }
     }
     try {
@@ -230,7 +232,7 @@ export async function GET(
       console.error('Error serving decrypted file:', fileError);
       return NextResponse.json(
         { error: 'Failed to decrypt file' },
-        { status: 500 }
+        { status: 500, headers: { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="error.json"; filename*=UTF-8''error.json` } }
       );
     }
 
@@ -238,7 +240,7 @@ export async function GET(
     console.error('Error in download route:', error);
     return NextResponse.json(
       { error: 'Internal server error' }, 
-      { status: 500 }
+      { status: 500, headers: { 'Content-Type': 'application/json', 'Content-Disposition': `attachment; filename="error.json"; filename*=UTF-8''error.json` } }
     );
   }
 }
