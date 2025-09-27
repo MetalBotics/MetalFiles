@@ -136,33 +136,35 @@ export async function GET(
     // If this token is password-protected, require the client to supply a password
     const tokenAny: any = tokenData;
     if (tokenAny.pwVerifier) {
-      // Prefer header, but accept query param ?password= for direct API links
+      // Accept password via header or query param only
       let providedPw = request.headers.get('x-download-password') || '';
+
       if (!providedPw) {
         try {
           const url = new URL(request.url);
           providedPw = url.searchParams.get('password') || '';
         } catch (e) {
-          // ignore URL parse errors and fall through
+          // ignore
         }
       }
 
       if (!providedPw) {
-        return NextResponse.json({ error: 'Password required for this download' }, { status: 401 });
+        return NextResponse.json({ error: 'Password required for this download' }, { status: 400 });
       }
 
+      // Strip surrounding quotes if provided like ?password="1234"
+      providedPw = providedPw.replace(/^['"]|['"]$/g, '');
+
       try {
-        // Derive key buffer from provided password using salt
         const saltBuffer = Buffer.from(tokenAny.pwSalt, 'base64');
         const keyBuffer = crypto.pbkdf2Sync(providedPw, saltBuffer, 100000, 32, 'sha256');
-        // Export derived key raw and compare base64
         const providedBase64 = keyBuffer.toString('base64');
         if (providedBase64 !== tokenAny.pwVerifier) {
-          return NextResponse.json({ error: 'Invalid password' }, { status: 403 });
+          return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
         }
       } catch (err) {
         console.error('Error verifying password for token:', err);
-        return NextResponse.json({ error: 'Invalid password' }, { status: 403 });
+        return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
       }
     }
     try {
@@ -188,13 +190,17 @@ export async function GET(
       const fileExtension = tokenData.originalName.split('.').pop()?.toLowerCase();
       const mimeType = getMimeType(fileExtension);
 
+      // Sanitize filename and create RFC5987 filename*
+      const safeName = (tokenData.originalName || 'download').replace(/[\r\n"]/g, '_');
+      const encodedName = encodeURIComponent(safeName);
+
       const response = new NextResponse(new Uint8Array(decryptedBuffer), {
         status: 200,
         headers: {
           'Content-Type': mimeType,
-          'Content-Disposition': `attachment; filename="${tokenData.originalName}"`,
+          'Content-Disposition': `attachment; filename="${safeName}"; filename*=UTF-8''${encodedName}`,
           'Content-Length': decryptedBuffer.length.toString(),
-          'X-Original-Name': encodeURIComponent(tokenData.originalName),
+          'X-Original-Name': tokenData.originalName,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0',

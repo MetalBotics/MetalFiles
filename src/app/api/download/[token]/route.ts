@@ -160,20 +160,26 @@ export async function GET(
     // If this token is password-protected, require the client to supply a password
     const tokenAny: any = tokenData;
     if (tokenAny.pwVerifier) {
-      // Prefer header, but accept query param ?password= for direct API links
+      // Accept password via header or query param only
       let providedPw = request.headers.get('x-download-password') || '';
+
+      // If not provided in header, fall back to ?password=
       if (!providedPw) {
         try {
           const url = new URL(request.url);
           providedPw = url.searchParams.get('password') || '';
         } catch (e) {
-          // ignore URL parse errors and fall through
+          // ignore URL parse errors
         }
       }
 
       if (!providedPw) {
-        return NextResponse.json({ error: 'Password required for this download' }, { status: 401 });
+        // Accept empty password as bad request (client should provide password)
+        return NextResponse.json({ error: 'Password required for this download' }, { status: 400 });
       }
+
+      // Accept passwords wrapped in quotes (e.g. ?password="1234") — strip leading/trailing single or double quotes
+      providedPw = providedPw.replace(/^['"]|['"]$/g, '');
 
       try {
         // Derive key buffer from provided password using salt
@@ -182,11 +188,11 @@ export async function GET(
         // Export derived key raw and compare base64
         const providedBase64 = keyBuffer.toString('base64');
         if (providedBase64 !== tokenAny.pwVerifier) {
-          return NextResponse.json({ error: 'Invalid password' }, { status: 403 });
+          return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
         }
       } catch (err) {
         console.error('Error verifying password for token:', err);
-        return NextResponse.json({ error: 'Invalid password' }, { status: 403 });
+        return NextResponse.json({ error: 'Invalid password' }, { status: 400 });
       }
     }
 
@@ -234,17 +240,22 @@ export async function GET(
         // Return the decrypted file with correct headers
       // Build a robust Content-Disposition with filename* (RFC 5987) so curl -OJ
       // and browsers can correctly extract UTF-8 filenames and extensions.
-      const encodedName = encodeURIComponent(tokenData.originalName);
-      const contentDisposition = `attachment; filename="${tokenData.originalName}"; filename*=UTF-8''${encodedName}`;
+      // Sanitize filename to avoid header injection and provide RFC5987 filename*
+      const safeName = (tokenData.originalName || 'download').replace(/[\r\n"]/g, '_');
+      const encodedName = encodeURIComponent(safeName);
+      const contentDisposition = `attachment; filename="${safeName}"; filename*=UTF-8''${encodedName}`;
 
-      return new NextResponse(new Uint8Array(decryptedBuffer), {
+      // Create response with the decrypted bytes
+      const body = new Uint8Array(decryptedBuffer);
+
+      return new NextResponse(body, {
         status: 200,
         headers: {
           'Content-Type': mimeType,
           'Content-Disposition': contentDisposition,
           // X-Original-Name left as plain original name for clients that prefer it
           'X-Original-Name': tokenData.originalName,
-          'Content-Length': decryptedBuffer.length.toString(),
+          'Content-Length': body.length.toString(),
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0',
